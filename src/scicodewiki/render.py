@@ -62,12 +62,25 @@ def formula_card_md(entry: FormulaEntry, state: str) -> str:
 
 
 def subsystem_page_md(stage: dict, entries: list[FormulaEntry],
-                      repo: Path) -> str:
+                      repo: Path, narrative: str = "") -> str:
     lines = [f"# {stage['title']}", "",
-             f"管线阶段 `{stage['id']}`。模块：{', '.join(stage.get('modules', []))}",
-             ""]
+             f"管线阶段 `{stage['id']}`。", ""]
+    mods = stage.get("modules", [])
+    if mods:
+        lines += ["**模块**", ""]
+        for m in mods:
+            src = m.replace(".", "/")
+            lines.append(f"- `{m}` → [`{src}.py`](../../{src}.py)")
+        lines += [""]
+    docs = stage.get("docs", [])
+    if docs:
+        lines += ["**相关文档（仓库现有 docs/）**", ""]
+        lines += [f"- [{d}](../../{d})" for d in docs]
+        lines += [""]
+    if narrative:
+        lines += [narrative.strip(), ""]
     if not entries:
-        lines += ["（本阶段暂无注册表条目）", ""]
+        lines += ["（本阶段暂无注册表条目；知识与叙事见上方链接。）", ""]
     for entry in entries:
         lines.append(formula_card_md(entry, badge_state(entry, repo)))
     return "\n".join(lines)
@@ -95,6 +108,7 @@ def build(repo: Path, formulas: Path, out: Path) -> list[Path]:
 
     pages = out / "pages"
     pages.mkdir(parents=True, exist_ok=True)
+    narratives = out / "narratives"
     written = []
     stage_nav = []
     for stage in manifest["stages"]:
@@ -102,7 +116,9 @@ def build(repo: Path, formulas: Path, out: Path) -> list[Path]:
         stage_entries = [e for e in entries
                          if any(e.implements.get("module", "")
                                 .startswith(m) for m in mods)]
-        page = subsystem_page_md(stage, stage_entries, repo)
+        npath = narratives / f"{stage['id']}.md"
+        narrative = npath.read_text(encoding="utf-8") if npath.exists() else ""
+        page = subsystem_page_md(stage, stage_entries, repo, narrative)
         fname = f"stage-{stage['id']}.md"
         (pages / fname).write_text(page, encoding="utf-8")
         written.append(pages / fname)
@@ -113,26 +129,48 @@ def build(repo: Path, formulas: Path, out: Path) -> list[Path]:
     written.append(pages / "registry-index.md")
 
     (pages / "index.md").write_text(
-        f"# {manifest['repo']} 科学文档\n\n"
-        "由 scicodewiki 渲染。公式断言带信任徽章：\n"
-        "✅ verified / 🕐 stale / ❌ failing /  unverified\n",
-        encoding="utf-8")
+        index_md(manifest, entries, repo), encoding="utf-8")
     written.append(pages / "index.md")
 
     import yaml
-    mkdocs = {
-        "site_name": f"{manifest['repo']} wiki",
-        "docs_dir": "pages",
-        "theme": "material",
-        "markdown_extensions": [
-            {"pymdownx.arithmatex": {"generic": True}},
-            "pymdownx.superfences",
-        ],
-        "nav": [{"概述": "index.md"}, {"子系统": stage_nav},
-                {"开发与参考": [{"公式注册表与验证状态": "registry-index.md"}]}],
-    }
+    nav = yaml.safe_dump(
+        [{"概述": "index.md"}, {"子系统": stage_nav},
+         {"开发与参考": [{"公式注册表与验证状态": "registry-index.md"}]}],
+        allow_unicode=True, sort_keys=False)
     (out / "mkdocs.yml").write_text(
-        yaml.safe_dump(mkdocs, allow_unicode=True, sort_keys=False),
+        f"site_name: {manifest['repo']} wiki\n"
+        f"docs_dir: pages\n"
+        f"theme: material\n"
+        f"markdown_extensions:\n"
+        f"  - pymdownx.arithmatex:\n"
+        f"      generic: true\n"
+        f"  - pymdownx.superfences:\n"
+        f"      custom_fences:\n"
+        f"        - name: mermaid\n"
+        f"          class: mermaid\n"
+        f"          format: !!python/name:pymdownx.superfences.fence_code_format\n"
+        f"nav:\n{nav}",
         encoding="utf-8")
     written.append(out / "mkdocs.yml")
     return written
+
+
+def index_md(manifest: dict, entries: list[FormulaEntry], repo: Path) -> str:
+    """覆盖率概览：wiki 的入口 = 每阶段的条目/徽章/链接，不再是空 stub。"""
+    lines = [f"# {manifest['repo']} 科学文档", "",
+             "由 scicodewiki 渲染。公式断言带信任徽章：",
+             "✅ verified / 🕐 stale /  failing / ⚪ unverified", "",
+             "| 阶段 | 条目 | 徽章 | 现有 docs/ |", "|---|---|---|---|"]
+    for stage in manifest["stages"]:
+        mods = stage.get("modules", [])
+        es = [e for e in entries
+              if any(e.implements.get("module", "").startswith(m)
+                     for m in mods)]
+        states = [badge_state(e, repo) for e in es]
+        badges = " ".join(f"{BADGES[s]}×{states.count(s)}"
+                          for s in dict.fromkeys(states)) if states else "—"
+        docs = "、".join(d.split("/")[-1] for d in stage.get("docs", [])) or "—"
+        lines.append(f"| [{stage['title']}](stage-{stage['id']}.md) "
+                     f"| {len(es)} | {badges} | {docs} |")
+    lines += ["", "审计面：[公式注册表与验证状态](registry-index.md)", ""]
+    return "\n".join(lines)

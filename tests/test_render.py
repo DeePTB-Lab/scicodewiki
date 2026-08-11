@@ -64,5 +64,6 @@ def test_build_writes_pages(tmp_path):
         <= set(written)
     page = (out / "pages" / "stage-s1.md").read_text(encoding="utf-8")
     assert "阶段一" in page and "demo.x" in page
-    cfg = yaml.safe_load((out / "mkdocs.yml").read_text(encoding="utf-8"))
-    assert cfg["docs_dir"] == "pages"
+    # mkdocs.yml carries a !!python/name tag (mermaid fence) -> text asserts
+    cfg_txt = (out / "mkdocs.yml").read_text(encoding="utf-8")
+    assert "docs_dir: pages" in cfg_txt and "mermaid" in cfg_txt
