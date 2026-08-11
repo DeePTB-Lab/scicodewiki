@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import pytest
 import yaml
 
@@ -27,21 +29,26 @@ def _entry(verdicts=None):
     return FormulaEntry.from_dict(data)
 
 
-@pytest.mark.parametrize("state", list(BADGES))
-def test_card_renders_each_badge_state(state):
-    card = formula_card_md(_entry(), state)
-    assert BADGES[state] in card
+def test_card_is_pure_documentation():
+    card = formula_card_md(_entry())
     assert "`demo.x`" in card
     assert "Togo2015" in card
     assert "HWHM" in card
+    assert not any(b in card for b in BADGES.values())  # no badges on reader pages
+
+
+@pytest.mark.parametrize("state", list(BADGES))
+def test_audit_face_keeps_badges(state):
+    idx = registry_index_md([_entry()], Path("."))
+    assert "⚪" in idx  # unverified for a verdict-less entry
 
 
 def test_verdict_log_in_audit_face_not_reader_pages():
     from pathlib import Path
     e = _entry([{"at": "2026-08-11", "commit": "abc", "seed": 1,
                  "result": "fail", "diagnosis": "ratio constant at 6"}])
-    card = formula_card_md(e, "failing")
-    assert "ratio constant at 6" not in card      # reader page: badge only
+    card = formula_card_md(e)
+    assert "ratio constant at 6" not in card      # reader page: no dev log
     idx = registry_index_md([e], Path("."))
     assert "ratio constant at 6" in idx           # audit face keeps diagnosis
 

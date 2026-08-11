@@ -32,13 +32,52 @@ document$.subscribe(() => {
 });
 """
 
+# reader-facing typography: CJK stack, reading measure, quiet tables,
+# centered diagrams. design tokens stay in the theme palette (mkdocs.yml).
+EXTRA_CSS = """
+:root {
+  --md-text-font: -apple-system, "PingFang SC", "Hiragino Sans GB",
+    "Noto Sans SC", "Source Han Sans SC", "Microsoft YaHei", sans-serif;
+  --md-code-font: "SF Mono", "JetBrains Mono", "Fira Code", Consolas,
+    monospace;
+}
+.md-typeset {
+  font-size: .78rem;
+  line-height: 1.85;
+}
+.md-typeset h1, .md-typeset h2, .md-typeset h3 {
+  letter-spacing: .01em;
+  font-weight: 700;
+}
+.md-content { max-width: 46rem; margin-inline: auto; }
+.md-typeset table:not([class]) {
+  font-size: .72rem;
+  border-radius: .3rem;
+}
+.md-typeset table:not([class]) th {
+  background: var(--md-default-fg-color--lightest);
+  color: var(--md-default-bg-color);
+}
+.md-typeset .mermaid, .md-typeset pre.mermaid {
+  display: block;
+  text-align: center;
+}
+.md-typeset code { font-size: .72rem; }
+.md-typeset .admonition, .md-typeset details {
+  border-radius: .35rem;
+  font-size: .74rem;
+}
+"""
+
 
 def _badge(state: str) -> str:
     return f"{BADGES[state]} `{state}`"
 
 
-def formula_card_md(entry: FormulaEntry, state: str) -> str:
-    lines = [f"### `{entry.id}` {_badge(state)}", ""]
+def formula_card_md(entry: FormulaEntry) -> str:
+    # reader pages are pure documentation: no badges, no verdict wording.
+    # verification lives in the audit face (registry index / CLI / CI) only.
+    lines = [f"### `{entry.id}`", ""]
     if entry.latex:
         lines += ["**公式（规范形式）**", "", f"$${entry.latex.strip()}$$", ""]
     lines += ["**SymPy 机读形式**", "", "```", entry.sympy.strip(), "```", ""]
@@ -90,7 +129,7 @@ def subsystem_page_md(stage: dict, entries: list[FormulaEntry],
     if not entries:
         lines += ["（本阶段暂无注册表条目；知识与叙事见上方链接。）", ""]
     for entry in entries:
-        lines.append(formula_card_md(entry, badge_state(entry, repo)))
+        lines.append(formula_card_md(entry))
     return "\n".join(lines)
 
 
@@ -158,6 +197,9 @@ def build(repo: Path, formulas: Path, out: Path) -> list[Path]:
     jsdir = pages / "javascripts"
     jsdir.mkdir(exist_ok=True)
     (jsdir / "mathjax.js").write_text(MATHJAX_JS, encoding="utf-8")
+    cssdir = pages / "stylesheets"
+    cssdir.mkdir(exist_ok=True)
+    (cssdir / "extra.css").write_text(EXTRA_CSS, encoding="utf-8")
 
     import yaml
     nav = yaml.safe_dump(
@@ -167,7 +209,6 @@ def build(repo: Path, formulas: Path, out: Path) -> list[Path]:
     (out / "mkdocs.yml").write_text(
         f"site_name: {manifest['repo']} wiki\n"
         f"docs_dir: pages\n"
-        f"theme: material\n"
         f"markdown_extensions:\n"
         f"  - pymdownx.arithmatex:\n"
         f"      generic: true\n"
@@ -179,6 +220,30 @@ def build(repo: Path, formulas: Path, out: Path) -> list[Path]:
         f"extra_javascript:\n"
         f"  - javascripts/mathjax.js\n"
         f"  - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js\n"
+        f"extra_css:\n"
+        f"  - stylesheets/extra.css\n"
+        f"theme:\n"
+        f"  name: material\n"
+        f"  features:\n"
+        f"    - navigation.instant\n"
+        f"    - navigation.top\n"
+        f"    - content.code.copy\n"
+        f"    - toc.follow\n"
+        f"  palette:\n"
+        f"    - media: '(prefers-color-scheme: light)'\n"
+        f"      scheme: default\n"
+        f"      primary: indigo\n"
+        f"      accent: teal\n"
+        f"      toggle:\n"
+        f"        icon: material/weather-night\n"
+        f"        name: 切换暗色\n"
+        f"    - media: '(prefers-color-scheme: dark)'\n"
+        f"      scheme: slate\n"
+        f"      primary: indigo\n"
+        f"      accent: teal\n"
+        f"      toggle:\n"
+        f"        icon: material/weather-sunny\n"
+        f"        name: 切换亮色\n"
         f"nav:\n{nav}",
         encoding="utf-8")
     written.append(out / "mkdocs.yml")
@@ -186,21 +251,23 @@ def build(repo: Path, formulas: Path, out: Path) -> list[Path]:
 
 
 def index_md(manifest: dict, entries: list[FormulaEntry], repo: Path) -> str:
-    """覆盖率概览：wiki 的入口 = 每阶段的条目/徽章/链接，不再是空 stub。"""
-    lines = [f"# {manifest['repo']} 科学文档", "",
-             "由 scicodewiki 渲染。公式断言带信任徽章：",
-             "✅ verified / 🕐 stale /  failing / ⚪ unverified", "",
-             "| 阶段 | 条目 | 徽章 | 现有 docs/ |", "|---|---|---|---|"]
-    for stage in manifest["stages"]:
-        mods = stage.get("modules", [])
-        es = [e for e in entries
-              if any(e.implements.get("module", "").startswith(m)
-                     for m in mods)]
-        states = [badge_state(e, repo) for e in es]
-        badges = " ".join(f"{BADGES[s]}×{states.count(s)}"
-                          for s in dict.fromkeys(states)) if states else "—"
-        docs = "、".join(d.split("/")[-1] for d in stage.get("docs", [])) or "—"
-        lines.append(f"| [{stage['title']}](stage-{stage['id']}.md) "
-                     f"| {len(es)} | {badges} | {docs} |")
-    lines += ["", "审计面：[公式注册表与验证状态](registry-index.md)", ""]
+    """Landing page: what the code does, pipeline at a glance, reading map.
+    Pure documentation — no verification plumbing on reader surfaces."""
+    stages = manifest["stages"]
+    lines = [f"# {manifest['repo']}", "",
+             "科学计算文档：按物理工作流组织，公式与代码绑定一一对应，",
+             "理论取文献规范形式，约定差异显式换算。", "",
+             "```mermaid", "flowchart LR"]
+    lines.append("  " + " --> ".join(
+        f'{s["id"]}["{s["title"]}"]' for s in stages))
+    lines += ["```", "", "## 阅读地图", ""]
+    lines.append("- [核心概念与理论基础](theory.md) — 规范形式与约定换算框")
+    for s in stages:
+        mods = s.get("modules", [])
+        n = len([e for e in entries
+                 if any(e.implements.get("module", "").startswith(m)
+                        for m in mods)])
+        extra = f"（{n} 条机读公式）" if n else ""
+        lines.append(f"- [{s['title']}](stage-{s['id']}.md){extra}")
+    lines += ["", "开发与维护入口见左侧「开发与参考」。", ""]
     return "\n".join(lines)

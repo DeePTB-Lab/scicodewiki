@@ -196,12 +196,17 @@ verdicts:                  # 追加式判决记录 = 审计语料 + 徽章来源
 ```
 
 子系统页（wiki 主体）内部骨架：
-概述/叙事 → 代码走读 + 张量数据流图 → 公式卡片（徽章仅标题一个 glyph）。
+物理图像 → 推导脉络 → 管线/实现走读 + 张量数据流图 → 用法示例 →
+基准与验证（引原始 docs 数字）→ 文献；公式卡片内嵌（代码绑定形式）。
+**读者 wiki = 纯文档：验证信息零出现**（无徽章、无 pass/fail 字样）；
+徽章四态与 verdict 日志只存在于审计面（注册表索引页 + 条目 YAML + CI）。
 **理论规范形式与约定换算框统一在 1 区"核心概念与理论基础"页**
-（子系统页只放代码绑定形式，链接到理论页）；
-**verdict 日志是开发过程记录，只进审计面**（注册表索引 + 条目 YAML + CI），
-读者页不载。mkdocs 数学渲染 = arithmatex generic + extra_javascript
-（mathjax.js + CDN bundle；material 9.7 不自动加载）。
+（子系统页只放代码绑定形式，链接到理论页）。
+landing = 管线总览图 + 阅读地图。
+mkdocs 数学渲染 = arithmatex generic + extra_javascript
+（mathjax.js + CDN bundle；material 9.7 不自动加载）；
+视觉 = material 主题定制（CJK 字体栈/排版 measure/暗色切换，extra.css）。
+质量标杆：linewidth 页 = 教科书章节级（物理图像+推导+示例+对照表）。
 
 审计面收进"开发与参考"，不占顶层导航：
 **公式注册表与验证状态**（徽章全集）、**约定总表**（convention_map 自动聚合）。
