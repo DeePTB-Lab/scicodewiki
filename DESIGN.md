@@ -22,6 +22,10 @@ scicodewiki 是面向科学计算仓库的**仓库原生、持续验证的文档
 | 读者端 | 独立 mkdocs wiki 站，与目标仓库现有 docs/ 并存互链 |
 | 生成端 | 用户自己的 coding agent CLI（Claude Code 为主，codex 等薄适配）；零 API key、零自有基建 |
 | 数据主权 | 注册表永远在被文档化的仓库内 |
+| 足迹纪律 | scicodewiki 在目标仓库的产出全部 confined 在 `wiki/` 一个目录内
+（注册表 wiki/formulas/、页面 wiki/pages/、构建 wiki/_site/）；
+唯一例外 `.github/workflows`（GitHub 强制路径）；AGENTS.md/CLAUDE.md 注入须
+`init --agents-md` 显式 opt-in |
 | 入口 | CLI 是骨、plugin 是皮：v0 建命令层，v0 末包 plugin，v1 起 plugin 是日常主界面 |
 | 路线图 | 开源工具 + phonax 样板间 + JOSS/CPC 论文；不做托管服务 |
 | 协议 | MIT |
@@ -144,7 +148,7 @@ plugin hooks 可让"绑定文件变更 → 自动复验"成为默认行为。
 
 ## 6. 注册表 schema
 
-住在目标仓库 `formulas/`（YAML + SymPy 源）。草图（非定稿）：
+住在目标仓库 `wiki/formulas/`（YAML + SymPy 源；足迹纪律见 §2）。草图（非定稿）：
 
 ```yaml
 id: linewidth.matrix_element_V
@@ -259,7 +263,7 @@ scicodewiki/
 
 | 能力 | 用法 | 时点 |
 |---|---|---|
-| CLAUDE.md/AGENTS.md 约定注入 | init 写文档约定段：注册表存在、绑定清单位置、"改绑定代码后跑 verify"——任何进入仓库的 agent 会话成为文档维护参与者 | v0（近零成本，最高杠杆） |
+| CLAUDE.md/AGENTS.md 约定注入 | init --agents-md（opt-in，足迹纪律）写文档约定段：注册表存在、绑定清单位置、"改绑定代码后跑 verify"——任何进入仓库的 agent 会话成为文档维护参与者 | v0（opt-in） |
 | PostToolUse(Edit) hook | 编辑绑定源文件即验证，结果注入当前会话；漂移闭环在造成漂移的编辑里闭合 | v0 |
 | slash commands | /verify /build 薄 UX | v0 |
 | plugin 内 MCP server | 注册表作为结构化知识源（绑定查询/verdict 历史）供任意对话使用 | v1 |

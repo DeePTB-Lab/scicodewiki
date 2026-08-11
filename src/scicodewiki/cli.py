@@ -22,10 +22,10 @@ def _cmd_verify(args) -> int:
     repo = Path(args.repo).resolve()
     # formula_impl modules locate the target package through this
     os.environ["SCICODEWIKI_REPO"] = str(repo)
-    formulas = Path(args.formulas) if args.formulas else repo / "formulas"
+    formulas = Path(args.formulas) if args.formulas else repo / "wiki" / "formulas"
     commit = head_commit(repo) or "nogit"
     results = verify_repo(formulas, commit=commit, seed=args.seed,
-                          only=args.entry)
+                          only=args.entry, record=args.record)
     if not results:
         print(f"scicodewiki: no entries under {formulas}", file=sys.stderr)
         return 2
@@ -39,11 +39,24 @@ def _cmd_verify(args) -> int:
     return 1 if failed else 0
 
 
+def _cmd_serve(args) -> int:
+    import subprocess
+
+    repo = Path(args.repo).resolve()
+    cfg = repo / "wiki" / "mkdocs.yml"
+    if not cfg.exists():
+        print("scicodewiki: no wiki/mkdocs.yml; run `scicodewiki build` first",
+              file=sys.stderr)
+        return 2
+    return subprocess.call([sys.executable, "-m", "mkdocs", "serve",
+                            "-f", str(cfg), "-a", args.addr])
+
+
 def _cmd_build(args) -> int:
     from .render import build
 
     repo = Path(args.repo).resolve()
-    formulas = Path(args.formulas) if args.formulas else repo / "formulas"
+    formulas = Path(args.formulas) if args.formulas else repo / "wiki" / "formulas"
     out = Path(args.out) if args.out else repo / "wiki"
     for path in build(repo, formulas, out):
         print(path)
@@ -63,13 +76,17 @@ CONVENTION_SECTION = """<!-- scicodewiki:conventions -->
 
 def _cmd_init(args) -> int:
     repo = Path(args.repo).resolve()
-    formulas = repo / "formulas"
-    formulas.mkdir(exist_ok=True)
+    formulas = repo / "wiki" / "formulas"
+    formulas.mkdir(parents=True, exist_ok=True)
     manifest = formulas / "manifest.yaml"
     if not manifest.exists():
         manifest.write_text(f"repo: {repo.name}\nstages: []\n",
                             encoding="utf-8")
         print(f"created {manifest}")
+    if not args.agents_md:
+        print("skip AGENTS.md/CLAUDE.md injection "
+              "(pass --agents-md to opt in; default footprint stays in wiki/)")
+        return 0
     for name in ("AGENTS.md", "CLAUDE.md"):
         target = repo / name
         existing = target.read_text(encoding="utf-8") if target.exists() else ""
@@ -88,7 +105,7 @@ def _cmd_drift(args) -> int:
     from .registry import load_entries
 
     repo = Path(args.repo).resolve()
-    formulas = Path(args.formulas) if args.formulas else repo / "formulas"
+    formulas = Path(args.formulas) if args.formulas else repo / "wiki" / "formulas"
     entries = load_entries(formulas)
     if not entries:
         print(f"scicodewiki: no entries under {formulas}", file=sys.stderr)
@@ -116,7 +133,14 @@ def main(argv=None) -> int:
     p.add_argument("--entry", help="verify a single entry id")
     p.add_argument("--seed", type=int, default=0,
                    help="holdout sampler seed (gate authority: fresh seed each run)")
+    p.add_argument("--no-record", dest="record", action="store_false",
+                   help="do not append verdicts (CI mode)")
     p.set_defaults(fn=_cmd_verify)
+
+    p = sub.add_parser("serve", help="local wiki preview (mkdocs serve)")
+    _repo_args(p)
+    p.add_argument("-a", "--addr", default="127.0.0.1:8000")
+    p.set_defaults(fn=_cmd_serve)
 
     p = sub.add_parser("build", help="render the wiki site")
     _repo_args(p)
@@ -132,8 +156,11 @@ def main(argv=None) -> int:
     p.set_defaults(fn=lambda a: __import__(
         "scicodewiki.hookcheck", fromlist=["main"]).main())
 
-    p = sub.add_parser("init", help="seed formulas/ + AGENTS.md conventions in a target repo")
+    p = sub.add_parser("init", help="seed wiki/formulas/ in a target repo")
     _repo_args(p)
+    p.add_argument("--agents-md", action="store_true",
+                   help="opt in to AGENTS.md/CLAUDE.md convention injection "
+                        "(off by default: footprint stays inside wiki/)")
     p.set_defaults(fn=_cmd_init)
 
     args = parser.parse_args(argv)

@@ -14,7 +14,7 @@ def check_edit(data: dict) -> int:
     if not edited:
         return 0
     repo = Path(data.get("cwd") or ".").resolve()
-    formulas = repo / "formulas"
+    formulas = repo / "wiki" / "formulas"
     if not formulas.is_dir():
         return 0
     try:

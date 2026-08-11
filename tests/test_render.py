@@ -62,5 +62,7 @@ def test_build_writes_pages(tmp_path):
     written = [p.name for p in build(tmp_path, formulas, out)]
     assert {"index.md", "stage-s1.md", "registry-index.md", "mkdocs.yml"} \
         <= set(written)
-    page = (out / "stage-s1.md").read_text(encoding="utf-8")
+    page = (out / "pages" / "stage-s1.md").read_text(encoding="utf-8")
     assert "阶段一" in page and "demo.x" in page
+    cfg = yaml.safe_load((out / "mkdocs.yml").read_text(encoding="utf-8"))
+    assert cfg["docs_dir"] == "pages"

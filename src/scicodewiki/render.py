@@ -93,8 +93,9 @@ def build(repo: Path, formulas: Path, out: Path) -> list[Path]:
     out = Path(out)
     out.mkdir(parents=True, exist_ok=True)
 
+    pages = out / "pages"
+    pages.mkdir(parents=True, exist_ok=True)
     written = []
-    nav = [{"首页": "index.md"}]
     stage_nav = []
     for stage in manifest["stages"]:
         mods = stage.get("modules", [])
@@ -103,24 +104,25 @@ def build(repo: Path, formulas: Path, out: Path) -> list[Path]:
                                 .startswith(m) for m in mods)]
         page = subsystem_page_md(stage, stage_entries, repo)
         fname = f"stage-{stage['id']}.md"
-        (out / fname).write_text(page, encoding="utf-8")
-        written.append(out / fname)
+        (pages / fname).write_text(page, encoding="utf-8")
+        written.append(pages / fname)
         stage_nav.append({stage["title"]: fname})
 
-    (out / "registry-index.md").write_text(
+    (pages / "registry-index.md").write_text(
         registry_index_md(entries, repo), encoding="utf-8")
-    written.append(out / "registry-index.md")
+    written.append(pages / "registry-index.md")
 
-    (out / "index.md").write_text(
+    (pages / "index.md").write_text(
         f"# {manifest['repo']} 科学文档\n\n"
         "由 scicodewiki 渲染。公式断言带信任徽章：\n"
         "✅ verified / 🕐 stale / ❌ failing /  unverified\n",
         encoding="utf-8")
-    written.append(out / "index.md")
+    written.append(pages / "index.md")
 
     import yaml
     mkdocs = {
         "site_name": f"{manifest['repo']} wiki",
+        "docs_dir": "pages",
         "theme": "material",
         "markdown_extensions": [
             {"pymdownx.arithmatex": {"generic": True}},

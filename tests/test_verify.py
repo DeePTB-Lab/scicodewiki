@@ -45,8 +45,8 @@ TINY_IMPL = textwrap.dedent("""
 
 
 def _write_formulas(tmp_path, impl_src, entry_id="demo.x"):
-    formulas = tmp_path / "formulas"
-    formulas.mkdir(exist_ok=True)
+    formulas = tmp_path / "wiki" / "formulas"
+    formulas.mkdir(parents=True, exist_ok=True)
     (formulas / "impl.py").write_text(impl_src, encoding="utf-8")
     entry = {
         "id": entry_id, "kind": "algebraic", "sympy": "gamma == C * s",
@@ -113,7 +113,7 @@ def _git(repo, *args):
 def test_badge_states_lifecycle(tmp_path):
     repo = tmp_path / "repo"
     (repo / "src").mkdir(parents=True)
-    formulas = repo / "formulas"
+    formulas = repo / "wiki" / "formulas"
     _write_formulas(repo, PASS_IMPL)
     (repo / "src" / "m.py").write_text("x = 1\n", encoding="utf-8")
     _git(repo, "init", "-q")
