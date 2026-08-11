@@ -36,11 +36,14 @@ def test_card_renders_each_badge_state(state):
     assert "HWHM" in card
 
 
-def test_card_shows_verdict_history():
+def test_verdict_log_in_audit_face_not_reader_pages():
+    from pathlib import Path
     e = _entry([{"at": "2026-08-11", "commit": "abc", "seed": 1,
                  "result": "fail", "diagnosis": "ratio constant at 6"}])
     card = formula_card_md(e, "failing")
-    assert "ratio constant at 6" in card
+    assert "ratio constant at 6" not in card      # reader page: badge only
+    idx = registry_index_md([e], Path("."))
+    assert "ratio constant at 6" in idx           # audit face keeps diagnosis
 
 
 def test_index_lists_states(tmp_path):

@@ -17,6 +17,21 @@ from .registry import FormulaEntry, load_entries
 
 BADGES = {"verified": "✅", "stale": "🕐", "failing": "❌", "unverified": "⚪"}
 
+# material does not auto-load MathJax; official recipe = arithmatex generic
+# output (\( \) / \[ \]) + these two extra_javascript entries
+MATHJAX_JS = """window.MathJax = {
+  tex: {
+    inlineMath: [["\\\\(", "\\\\)"]],
+    displayMath: [["\\\\[", "\\\\]"]]
+  }
+};
+
+document$.subscribe(() => {
+  MathJax.typesetClear();
+  MathJax.typeset();
+});
+"""
+
 
 def _badge(state: str) -> str:
     return f"{BADGES[state]} `{state}`"
@@ -49,15 +64,8 @@ def formula_card_md(entry: FormulaEntry, state: str) -> str:
                   + (f", eq. {r['eq']}" if r.get("eq") else "")
                   for r in entry.references]
         lines += [""]
-    lines += ["**验证状态**", ""]
-    if entry.verdicts:
-        for v in entry.verdicts[-5:]:
-            diag = f" — {v['diagnosis']}" if v.get("diagnosis") else ""
-            lines.append(f"- {v.get('at')} @{v.get('commit')} "
-                         f"seed={v.get('seed')}: **{v.get('result')}**{diag}")
-    else:
-        lines.append("- （尚无判决记录）")
-    lines += [""]
+    # reader pages carry only the badge glyph (in the heading); the verdict
+    # LOG is dev-process record — it lives in the registry index (audit face)
     return "\n".join(lines)
 
 
@@ -92,10 +100,14 @@ def registry_index_md(entries: list[FormulaEntry], repo: Path) -> str:
              "| 条目 | kind | 徽章 | 最近判决 |", "|---|---|---|---|"]
     for e in entries:
         last = e.verdicts[-1] if e.verdicts else {}
+        diag = last.get("diagnosis")
+        diag_cell = f"<br>{diag}" if diag else ""
         lines.append(
             f"| `{e.id}` | {e.kind} | {_badge(badge_state(e, repo))} "
-            f"| {last.get('result', '—')} @{last.get('commit', '—')} |")
-    lines += [""]
+            f"| {last.get('result', '—')} @{last.get('commit', '—')}"
+            f"{diag_cell} |")
+    lines += ["", "完整判决历史见各条目 YAML 的 `verdicts` 字段"
+                 "（开发过程记录，不面向 wiki 读者）。", ""]
     return "\n".join(lines)
 
 
@@ -132,10 +144,25 @@ def build(repo: Path, formulas: Path, out: Path) -> list[Path]:
         index_md(manifest, entries, repo), encoding="utf-8")
     written.append(pages / "index.md")
 
+    # zone-1 unified theory page (canonical forms + convention boxes live
+    # here, not inside subsystem pages)
+    theory_src = narratives / "theory.md"
+    zone1 = [{"概述": "index.md"}]
+    if theory_src.exists():
+        (pages / "theory.md").write_text(
+            "# 核心概念与理论基础\n\n"
+            + theory_src.read_text(encoding="utf-8"), encoding="utf-8")
+        written.append(pages / "theory.md")
+        zone1.append({"核心概念与理论基础": "theory.md"})
+
+    jsdir = pages / "javascripts"
+    jsdir.mkdir(exist_ok=True)
+    (jsdir / "mathjax.js").write_text(MATHJAX_JS, encoding="utf-8")
+
     import yaml
     nav = yaml.safe_dump(
-        [{"概述": "index.md"}, {"子系统": stage_nav},
-         {"开发与参考": [{"公式注册表与验证状态": "registry-index.md"}]}],
+        zone1 + [{"子系统": stage_nav},
+                 {"开发与参考": [{"公式注册表与验证状态": "registry-index.md"}]}],
         allow_unicode=True, sort_keys=False)
     (out / "mkdocs.yml").write_text(
         f"site_name: {manifest['repo']} wiki\n"
@@ -149,6 +176,9 @@ def build(repo: Path, formulas: Path, out: Path) -> list[Path]:
         f"        - name: mermaid\n"
         f"          class: mermaid\n"
         f"          format: !!python/name:pymdownx.superfences.fence_code_format\n"
+        f"extra_javascript:\n"
+        f"  - javascripts/mathjax.js\n"
+        f"  - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js\n"
         f"nav:\n{nav}",
         encoding="utf-8")
     written.append(out / "mkdocs.yml")
