@@ -15,7 +15,7 @@ ENTRY = {
     "id": "demo.x", "kind": "algebraic", "sympy": "g == 18*pi/hbar**2 * S",
     "implements": {"module": "m", "function": "f", "file": "src/m.py"},
     "test": {"type": "oracle", "note": "oracle"},
-    "symbol_identity": ["S 为 |V|^2"],
+    "symbol_identity": ["S 为 |V|^2", "Γ 为半线宽（HWHM），cyclic THz"],
     "convention_map": [{"ours": "HWHM", "theirs": "Togo2015 HWHM",
                         "verified_by": "tests/oracles/x.py"}],
     "references": [{"paper": "Togo2015", "where": "PRB 91, 094306"}],

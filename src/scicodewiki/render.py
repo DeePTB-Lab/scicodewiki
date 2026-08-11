@@ -82,16 +82,11 @@ def formula_card_md(entry: FormulaEntry) -> str:
         lines += ["**公式（规范形式）**", "", f"$${entry.latex.strip()}$$", ""]
     lines += ["**SymPy 机读形式**", "", "```", entry.sympy.strip(), "```", ""]
     if entry.symbol_identity:
-        lines += ["**符号身份（人审层）**", ""]
+        lines += ["**符号说明**", ""]
         lines += [f"- {s}" for s in entry.symbol_identity]
         lines += [""]
-    if entry.convention_map:
-        lines += ["**约定映射**", "", "| 本仓库 | 文献/外部约定 | 背书 |",
-                  "|---|---|---|"]
-        for c in entry.convention_map:
-            lines.append(f"| {c.get('ours', '')} | {c.get('theirs', '')} "
-                         f"| {c.get('verified_by', '—')} |")
-        lines += [""]
+    # convention_map (ours/theirs/verified_by) is registry machinery for the
+    # gate and audit face; reader pages get symbol explanations instead.
     imp = entry.implements
     binds = "".join(f"\n- `{k}`: {v}" for k, v in imp.get("binds", {}).items())
     lines += ["**代码绑定**", "",
