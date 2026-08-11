@@ -1,0 +1,7 @@
+{
+  "name": "scicodewiki",
+  "version": "0.0.1",
+  "description": "Verified scientific documentation layer: formula registry, equivalence gates, badged wiki. Skills propose; mechanical gates decide.",
+  "skills": "./skills",
+  "hooks": "./hooks/hooks.json"
+}

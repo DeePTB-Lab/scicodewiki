@@ -1,0 +1,82 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://scicodewiki/schemas/formula-entry.schema.json",
+  "title": "scicodewiki formula registry entry",
+  "description": "One machine-readable formula claim: SymPy expression + code binding + executable mirror + conventions + references + provenance + verdicts. The equivalence gate derives its check from this record, so the check cannot drift from the formula.",
+  "type": "object",
+  "required": ["id", "kind", "sympy", "implements", "test"],
+  "properties": {
+    "id": {"type": "string", "description": "stable, citable identifier, e.g. linewidth.matrix_element_V"},
+    "kind": {"enum": ["algebraic", "quadrature", "novel", "convention-map"]},
+    "sympy": {"type": "string", "description": "canonical SymPy expression (rendering + citation source)"},
+    "latex": {"type": "string", "description": "optional human textbook form; must round-trip against sympy (v1 check)"},
+    "formula_impl": {"type": "string", "description": "path (relative to formulas/) of the executable SymPy mirror the gate runs; required for exact/convergent"},
+    "implements": {
+      "type": "object",
+      "required": ["module", "function"],
+      "properties": {
+        "module": {"type": "string"},
+        "function": {"type": "string", "description": "function/method name; stable across refactors, unlike line numbers"},
+        "binds": {"type": "object", "description": "named arrays/lines the formula covers (rendering hints)"}
+      }
+    },
+    "symbol_identity": {"type": "array", "items": {"type": "string"}, "description": "human-audit layer: what each symbol/axis physically is; machines do not judge"},
+    "convention_map": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "ours": {"type": "string"},
+          "theirs": {"type": "string"},
+          "verified_by": {"type": "string", "description": "link (not dependency) to a test endorsing the mapping"}
+        }
+      }
+    },
+    "references": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "paper": {"type": "string"},
+          "where": {"type": "string"},
+          "eq": {},
+          "pdf_anchor": {},
+          "arxiv_id": {"type": "string"}
+        }
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "properties": {
+        "origin": {"enum": ["human", "agent", "literature-transcription"]},
+        "worker": {"type": "string"},
+        "prompt_hash": {"type": "string"},
+        "at": {"type": "string"},
+        "via": {"type": "string"}
+      }
+    },
+    "test": {
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": {"enum": ["exact", "convergent", "oracle"]},
+        "tol": {"type": "number"},
+        "note": {"type": "string", "description": "for oracle/novel: what endorses the claim instead of equivalence"}
+      }
+    },
+    "verdicts": {
+      "type": "array",
+      "description": "append-only gate records: audit corpus + badge source + paper evidence chain",
+      "items": {
+        "type": "object",
+        "properties": {
+          "at": {"type": "string"},
+          "commit": {"type": "string"},
+          "seed": {"type": "integer"},
+          "result": {"enum": ["pass", "fail", "stale"]},
+          "diagnosis": {"type": "string"}
+        }
+      }
+    }
+  }
+}
