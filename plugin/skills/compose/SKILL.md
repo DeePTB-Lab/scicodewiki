@@ -49,7 +49,10 @@ consistency (duplication/glossary) is exactly what the coordinator-level
 `consistency` check is for.
 
 ## Never
-- edit `wiki/formulas/`;
+- edit `wiki/formulas/` FROM THIS ROLE — the registry only changes via
+  extract-formula + promote (the gate); a badge must always mean
+  "gate-passed". If you spot a wrong/stale entry while writing, STOP and
+  run fix-drift, then continue;
 - paste registry structures (convention_map, verdicts, badges) into reader pages;
 - uncited numbers;
 - restate whole source files;
