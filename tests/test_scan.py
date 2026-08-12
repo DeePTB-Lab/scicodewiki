@@ -121,6 +121,43 @@ def test_map_aggregation_and_centrality(tmp_path):
     yaml.safe_load((scan_dir / "_map.yaml").read_text(encoding="utf-8"))
 
 
+def _git(repo, *args):
+    import subprocess
+    subprocess.run(["git", "-C", str(repo), *args], check=True,
+                   capture_output=True, env={"HOME": str(repo),
+                                             "GIT_AUTHOR_NAME": "t",
+                                             "GIT_AUTHOR_EMAIL": "t@t",
+                                             "GIT_COMMITTER_NAME": "t",
+                                             "GIT_COMMITTER_EMAIL": "t@t"})
+
+
+def test_drift_cards_reset_on_change(tmp_path):
+    from scicodewiki.cli import main
+    from scicodewiki.scan import parse_card
+
+    repo = _scan_repo(tmp_path)
+    _git(repo, "init", "-q")
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-qm", "c1")
+    scan_dir = repo / "wiki" / "scan"
+    write_scan(repo, "pkg", scan_dir)
+    card = scan_dir / "pkg.core.md"
+    meta, body = parse_card(card.read_text(encoding="utf-8"))
+    meta["status"] = "scanned"
+    meta["purpose"] = "核心"
+    card.write_text("---\n" + yaml.safe_dump(meta, allow_unicode=True) +
+                    "---\n" + body, encoding="utf-8")
+
+    (repo / "pkg" / "core.py").write_text(
+        (repo / "pkg" / "core.py").read_text(encoding="utf-8") +
+        "\n# drift\n", encoding="utf-8")
+    _git(repo, "commit", "-aqm", "c2")
+    assert main(["drift-cards", "--repo", str(repo)]) == 0
+    again, _ = parse_card(card.read_text(encoding="utf-8"))
+    assert again["status"] == "skeleton"          # reset for rescan
+    assert again["purpose"] == "核心"             # semantics kept
+
+
 def test_locate_function_drift_immune(tmp_path):
     repo = _scan_repo(tmp_path)
     start, end = locate_function(repo, "pkg.core", "f")

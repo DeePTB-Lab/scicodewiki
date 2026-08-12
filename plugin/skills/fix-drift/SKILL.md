@@ -5,7 +5,9 @@ description: Repair registry entries whose equivalence gate fails or went stale 
 
 # Drift repair playbook
 
-1. `scicodewiki drift --repo .` → list failing / stale entries.
+1. `scicodewiki drift --repo .` → list failing / stale entries;
+   `scicodewiki drift-cards --repo .` → reset cards whose bound file changed
+   (then re-run scan-repo on the reset cards).
 2. Read the verdict diagnosis:
    - constant ratio → prefactor / combinatorial drift; the diagnosis enumerates conventional suspects (2, 1/2, 3!, 2π, …);
    - non-constant ratio → structural change; inspect the printed max-deviation input.

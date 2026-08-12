@@ -183,6 +183,10 @@ def write_scan(repo: Path, package: str, out_dir: Path,
         path.write_text(_card_text(meta, body), encoding="utf-8")
     build_map(scan_dir=out_dir, repo_name=package,
               out_path=out_dir / "_map.yaml")
+    from .drift import head_commit
+    (out_dir / ".scan_meta.yaml").write_text(
+        yaml.safe_dump({"commit": head_commit(repo) or "nogit"}),
+        encoding="utf-8")
     return counts
 
 
@@ -282,6 +286,23 @@ def build_map(scan_dir: Path, repo_name: str,
 
 def _pkg_of(cs: list[dict]) -> str:
     return cs[0]["unit"].split(".")[0]
+
+
+def reset_cards(scan_dir: Path, changed_files: set) -> list[str]:
+    """Drift maintenance: cards whose bound file changed go back to
+    skeleton (semantics kept, status reset — scan-repo re-fills them)."""
+    reset = []
+    for md in sorted(Path(scan_dir).glob("*.md")):
+        try:
+            meta, body = parse_card(md.read_text(encoding="utf-8"))
+        except ScanError:
+            continue
+        if meta.get("file") in changed_files \
+                and meta.get("status") == "scanned":
+            meta["status"] = "skeleton"
+            md.write_text(_card_text(meta, body), encoding="utf-8")
+            reset.append(meta["card"])
+    return reset
 
 
 def locate_function(repo: Path, module: str, name: str) -> tuple[int, int]:

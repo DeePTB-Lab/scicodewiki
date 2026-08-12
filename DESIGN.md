@@ -163,6 +163,11 @@ mkdocs + KaTeX；页面结构见 §7；徽章渲染读判决记录 + git 新鲜�
 
 ### S5 漂移维护
 
+- `drift-cards`：git diff（上次 scan 的 commit..HEAD）→ 受影响卡回
+  skeleton（语义保留，scan-repo 重填）；on-edit hook 对当前编辑文件同做。
+  与条目级 stale（badge）互补：条目管"公式还等不等于代码"，卡管"理解还
+  新不新"。
+
 git diff 定位受影响条目 → 复验 → 漂移报告（带比值诊断）→ 受影响页标 stale。
 **验证先于再生成**：比 CodeWiki 的"diff → 重新生成散文"便宜几个数量级且结论确定。
 plugin hooks 可让"绑定文件变更 → 自动复验"成为默认行为。

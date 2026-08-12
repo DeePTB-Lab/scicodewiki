@@ -69,6 +69,37 @@ def _cmd_preview(args) -> int:
     return 0
 
 
+def _cmd_drift_cards(args) -> int:
+    import subprocess
+
+    import yaml as _yaml
+
+    from .drift import head_commit
+    from .scan import reset_cards
+
+    repo = Path(args.repo).resolve()
+    scan_dir = repo / "wiki" / "scan"
+    meta_path = scan_dir / ".scan_meta.yaml"
+    if not meta_path.exists():
+        print("scicodewiki: no .scan_meta.yaml — run `scan` first",
+              file=sys.stderr)
+        return 2
+    old = _yaml.safe_load(meta_path.read_text(encoding="utf-8"))["commit"]
+    head = head_commit(repo) or "nogit"
+    if old == head:
+        print("drift-cards: scan up to date with HEAD")
+        return 0
+    r = subprocess.run(["git", "-C", str(repo), "diff", "--name-only",
+                        old, head], capture_output=True, text=True)
+    changed = set(r.stdout.split())
+    reset = reset_cards(scan_dir, changed)
+    for cid in reset:
+        print(f"drift-cards: {cid} -> skeleton (bound file changed)")
+    print(f"drift-cards: {len(reset)} cards reset "
+          f"({old}..{head}, {len(changed)} files changed)")
+    return 0
+
+
 def _cmd_promote(args) -> int:
     """Gate-driven staging promotion (F3): the gate runs on staging; only a
     pass moves the entry + mirror into formulas/."""
@@ -325,6 +356,10 @@ def main(argv=None) -> int:
     p.add_argument("--strict", action="store_true",
                    help="exit 1 while skeleton cards remain (outline gate)")
     p.set_defaults(fn=_cmd_scan)
+
+    p = sub.add_parser("drift-cards", help="reset scan cards whose bound file changed since last scan (git diff)")
+    _repo_args(p)
+    p.set_defaults(fn=_cmd_drift_cards)
 
     p = sub.add_parser("promote", help="gate-driven staging promotion: verify in staging, move to formulas/ only on pass")
     _repo_args(p)

@@ -35,6 +35,16 @@ def check_edit(data: dict) -> int:
                   f"{verdict.diagnosis}")
         else:
             print(f"scicodewiki: {entry.id} still equivalent after your edit")
+    scan_dir = repo / "wiki" / "scan"
+    if scan_dir.is_dir():
+        from .scan import reset_cards
+
+        try:
+            rel = str(Path(edited).relative_to(repo))
+        except ValueError:
+            rel = edited
+        for cid in reset_cards(scan_dir, {rel}):
+            print(f"scicodewiki: card {cid} -> skeleton (bound file changed)")
     return 0
 
 
