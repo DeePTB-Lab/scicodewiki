@@ -42,6 +42,27 @@ def _claims(tmp_path):
     return cd
 
 
+DET_M = textwrap.dedent("""
+    def mirror():
+        return 6.0
+
+    def target():
+        return 6.0
+""")
+
+
+def test_deterministic_contract_without_sample(tmp_path):
+    cd = tmp_path / "claims"
+    cd.mkdir()
+    (cd / "m_det.py").write_text(DET_M, encoding="utf-8")
+    (cd / "c.yaml").write_text(yaml.safe_dump({
+        "id": "g.det", "binds": {"module": "m", "function": "f"},
+        "sympy": "x == 6", "taxonomy": "prefactor",
+        "formula_impl": "m_det.py"}), encoding="utf-8")
+    s = audit(cd, seed=0)
+    assert s["totals"]["pass"] == 1
+
+
 def test_audit_verdicts_and_taxonomy(tmp_path):
     cd = _claims(tmp_path)
     s = audit(cd, seed=5)

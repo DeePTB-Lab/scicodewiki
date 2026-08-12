@@ -15,8 +15,10 @@ from pathlib import Path
 
 import yaml
 
+import numpy as np
+
 from .registry import FormulaEntry
-from .verify import run_gate
+from .verify import _load_impl, run_gate
 
 TAXONOMY = ("prefactor", "symbol-identity", "convention", "coverage",
             "innovation", "other")
@@ -33,6 +35,18 @@ def judge_claim(claim: dict, claims_dir: Path, seed: int) -> dict:
     if not claim.get("formula_impl"):
         return {"id": claim.get("id"), "result": "unverifiable",
                 "diagnosis": None}
+    impl = _load_impl(Path(claims_dir) / claim["formula_impl"],
+                      require=("mirror", "target"))
+    if not hasattr(impl, "sample"):
+        # deterministic audit contract: mirror()/target() take no args —
+        # claims are fixed statements; the judge compares claim vs code.
+        tol = float(claim.get("tol", 1e-6))
+        a = np.asarray(impl.mirror(), float)
+        b = np.asarray(impl.target(), float)
+        ok = a.shape == b.shape and np.allclose(a, b, rtol=tol, atol=tol)
+        return {"id": claim["id"], "result": "pass" if ok else "fail",
+                "diagnosis": None if ok else
+                f"claim={a} code={b} (tol {tol:g})"}
     entry = FormulaEntry.from_dict({
         "id": claim["id"],
         "kind": claim.get("kind", "algebraic"),

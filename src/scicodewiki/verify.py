@@ -47,7 +47,7 @@ COMMON_FACTORS = {
 }
 
 
-def _load_impl(path: Path):
+def _load_impl(path: Path, require=("sample", "mirror", "target")):
     if not path.exists():
         raise GateError(f"formula_impl not found: {path}")
     spec = importlib.util.spec_from_file_location(
@@ -55,7 +55,7 @@ def _load_impl(path: Path):
     )
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
-    for attr in ("sample", "mirror", "target"):
+    for attr in require:
         if not hasattr(mod, attr):
             raise GateError(f"{path.name}: formula_impl must define {attr}()")
     return mod
