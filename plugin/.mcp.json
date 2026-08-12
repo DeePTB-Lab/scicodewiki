@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "scicodewiki": {
+      "command": "python3",
+      "args": ["-m", "scicodewiki.mcp_server"]
+    }
+  }
+}

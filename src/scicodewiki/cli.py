@@ -402,6 +402,10 @@ def main(argv=None) -> int:
                    help="exit 1 while skeleton cards remain (outline gate)")
     p.set_defaults(fn=_cmd_scan)
 
+    p = sub.add_parser("mcp", help="serve the registry as an MCP knowledge source (stdio)")
+    p.set_defaults(fn=lambda a: __import__(
+        "scicodewiki.mcp_server", fromlist=["main"]).main())
+
     p = sub.add_parser("export-skills", help="copy the skill pack + chapter-spec for non-Claude agents (codex: .agents/skills)")
     p.add_argument("--out", required=True, help="target dir, e.g. <repo>/.agents/skills")
     p.set_defaults(fn=_cmd_export_skills)
