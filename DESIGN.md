@@ -66,11 +66,17 @@ repo ──▶ S1 结构分解 ──▶ S2 公式提取与验证 ──▶ S3 �
                 S5 漂移维护（git 比对 → 按需复验 → 漂移报告）
 ```
 
-### S1 结构分解：双树
+### S1 结构分解：census + 语义分组 + 完整性检查
 
-- **模块树**：Tree-Sitter AST + 依赖图（v1）。v0 手工指定单元。
-  科学仓库的实际切分需求是**文件内按方法粒度切**（phonax `linewidth.py` 单文件 3800 行），
-  CodeWiki 的 32k 叶子预算思想在此适用。
+- **census（确定性）**：`scicodewiki census` = stdlib AST 盘点
+  （模块/函数/LOC），分解的 ground truth（Python；多语言 Tree-Sitter = v2）。
+- **语义分组**：bootstrap 在 census 单元上分组为管线树（manifest），
+  不凭空推断。
+- **完整性**：`scicodewiki coverage` = census − manifest → undocumented
+  清单进审计面 + CI 警告；沉默缺口变可见缺口。
+- **规模触发递归**：子页绑定 >1500 LOC 时 narrate 按组件拆分、bottom-up
+  综合，深度 ≤2（回退机制，非默认）。模块树/叶子预算思想借自 CodeWiki，
+  但递归只在规模触发时启用。
 - **管线树**：物理工作流（如 relax → FC2 → FC3 → linewidth），wiki 顶层组织原则。
   v0 手写 manifest；v1 agent 推断 + 人确认。
 - **科学核识别**：把智能按科学含量分配而非文件体积。

@@ -39,6 +39,35 @@ def _cmd_verify(args) -> int:
     return 1 if failed else 0
 
 
+def _cmd_census(args) -> int:
+    from .census import write_census
+
+    repo = Path(args.repo).resolve()
+    package = args.package or repo.name
+    out = repo / "wiki" / ".census.json"
+    census = write_census(repo, package, out)
+    print(f"{len(census['units'])} modules, "
+          f"{sum(len(u['functions']) for u in census['units'])} functions "
+          f"-> {out}")
+    return 0
+
+
+def _cmd_coverage(args) -> int:
+    from .census import scan_package, undocumented
+    from .manifest import load_manifest
+
+    repo = Path(args.repo).resolve()
+    package = args.package or repo.name
+    manifest = load_manifest(repo / "wiki" / "formulas" / "manifest.yaml")
+    gaps = undocumented(scan_package(repo, package), manifest)
+    for u in gaps:
+        print(f"undocumented: {u['module']} ({u['loc']} LOC, "
+              f"{len(u['functions'])} funcs)")
+    print(f"coverage: {len(gaps)} undocumented modules "
+          f"(0 = every census unit is documented)")
+    return 0
+
+
 def _cmd_clean(args) -> int:
     """Wipe ALL scicodewiki outputs (the whole wiki/) so every test is a
     from-scratch generation. The repo's own content (source, docs/, README,
@@ -167,6 +196,17 @@ def main(argv=None) -> int:
     p = sub.add_parser("drift", help="report badge states (verified/stale/failing/unverified)")
     _repo_args(p)
     p.set_defaults(fn=_cmd_drift)
+
+    p = sub.add_parser("census", help="deterministic AST inventory of the package (decomposition ground truth)")
+    _repo_args(p)
+    p.add_argument("--package", default=None,
+                   help="package dir name (default: repo dir name)")
+    p.set_defaults(fn=_cmd_census)
+
+    p = sub.add_parser("coverage", help="report census units no manifest stage documents")
+    _repo_args(p)
+    p.add_argument("--package", default=None)
+    p.set_defaults(fn=_cmd_coverage)
 
     p = sub.add_parser("clean", help="delete generated wiki outputs (keep wiki/formulas inputs)")
     _repo_args(p)

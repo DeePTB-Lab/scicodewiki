@@ -10,6 +10,8 @@ repo's own content; never invent stages the docs/code do not support.
 
 ## Procedure
 
+0. Run `scicodewiki census --repo <repo>` first — the AST inventory is
+   your ground truth; group ONLY census units, never inferred phantoms.
 1. Read README, the docs/ listing, and the package layout
    (`scicodewiki`-agnostic: any scientific repo).
 2. Identify the **physical workflow order** (dependency chain, e.g.
@@ -24,6 +26,9 @@ repo's own content; never invent stages the docs/code do not support.
    stay empty here — extract fills the registry; render attaches cards
    after extraction.
 5. Write `wiki/formulas/manifest.yaml`.
+6. Run `scicodewiki coverage`; every reported gap either joins a stage or
+   is explicitly excluded (pure plumbing -> zone-3 API/dev pages note).
+   Silent gaps are defects.
 
 ## Never
 

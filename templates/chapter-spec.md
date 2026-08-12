@@ -38,6 +38,16 @@ docs/ 推导**，不得凭模型记忆；每条定量陈述带出处。
 - 记号表：符号 / 含义 / 单位口径（由 symbol_identity 重排成文档形态）；
 - 与其他约定的差异：一段散文（差 2、2π、ħ 的来源），不写对照表。
 
+## 规模与递归（预算规则）
+
+- 绑定代码以 `scicodewiki census` 为 ground truth；子页绑定超过约
+  **1500 LOC** 时必须拆分：先按组件/大函数各自成节（叶子叙事），
+  再 bottom-up 综合出节间导语；递归深度 ≤ 2，更深用页内锚点。
+- 小于预算时不递归——单层章节优先，递归是规模触发的回退，不是默认。
+- bootstrap 的 manifest 分组必须落在 census 单元上；`scicodewiki
+  coverage` 报告的 undocumented 模块要么进 manifest，要么显式标注
+  "不入 wiki"（如纯管道），不允许沉默缺口。
+
 ## 写作纪律（硬规则，渲染器之外的人审/checklist）
 1. 读者面零开发渗出：无徽章、pass/fail、verdict、convention_map、
    staging 等机器词汇；
