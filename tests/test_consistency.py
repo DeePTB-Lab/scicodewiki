@@ -106,3 +106,23 @@ def test_cli_consistency_exit_codes(tmp_path):
 def test_check_repo_degrades_without_manifest_cards(tmp_path):
     repo, _ = _wiki(tmp_path, alloc=())
     assert any("outline" in p for p in check_repo(repo))
+
+
+def test_cards_only_skips_thesis(tmp_path):
+    repo, _ = _wiki(tmp_path, alloc=("a", "b"), theses=["本页回答：Q？"],
+                    narratives={})
+    assert check_repo(repo)                 # thesis without narrative yet
+    assert not check_repo(repo, cards_only=True)   # outline-stage gate
+
+
+def test_exclusions_mechanical(tmp_path):
+    repo, _ = _wiki(tmp_path, alloc=("a", "b"))
+    mpath = repo / "wiki" / "formulas" / "manifest.yaml"
+    m = yaml.safe_load(mpath.read_text(encoding="utf-8"))
+    m["stages"][0]["excluded_cards"] = [{"card": "m.p", "note": "plumbing"}]
+    mpath.write_text(yaml.safe_dump(m, allow_unicode=True), encoding="utf-8")
+    assert check_repo(repo, cards_only=True) == []
+    m["stages"][0]["excluded_cards"] = ["m.a"]      # kernel exclusion = defect
+    mpath.write_text(yaml.safe_dump(m, allow_unicode=True), encoding="utf-8")
+    assert any("cannot be excluded" in p
+               for p in check_repo(repo, cards_only=True))

@@ -320,7 +320,6 @@ def index_md(manifest: dict, entries: list[FormulaEntry], repo: Path,
     lines += ["科学计算文档：按物理工作流组织，公式与代码绑定一一对应，",
              "理论取文献规范形式，约定差异显式换算。", ""]
     if dep:
-    if dep:
         lines += ["## 依赖总览", "", dep, ""]
     lines += ["## 管线总览", "", "```mermaid", "flowchart LR"]
     lines.append("  " + " --> ".join(

@@ -10,7 +10,7 @@ def _repo_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--repo", default=".",
                         help="target repository root (default: cwd)")
     parser.add_argument("--formulas", default=None,
-                        help="formulas dir (default: <repo>/formulas)")
+                        help="formulas dir (default: <repo>/wiki/formulas)")
 
 
 def _cmd_verify(args) -> int:
@@ -24,7 +24,9 @@ def _cmd_verify(args) -> int:
     os.environ["SCICODEWIKI_REPO"] = str(repo)
     formulas = Path(args.formulas) if args.formulas else repo / "wiki" / "formulas"
     commit = head_commit(repo) or "nogit"
-    results = verify_repo(formulas, commit=commit, seed=args.seed,
+    seed = args.seed if args.seed is not None else \
+        int.from_bytes(os.urandom(4), "little")
+    results = verify_repo(formulas, commit=commit, seed=seed,
                           only=args.entry, record=args.record)
     if not results:
         print(f"scicodewiki: no entries under {formulas}", file=sys.stderr)
@@ -67,10 +69,44 @@ def _cmd_preview(args) -> int:
     return 0
 
 
+def _cmd_promote(args) -> int:
+    """Gate-driven staging promotion (F3): the gate runs on staging; only a
+    pass moves the entry + mirror into formulas/."""
+    import shutil
+
+    from .registry import append_verdict, load_entry
+    from .verify import _today, run_gate
+
+    repo = Path(args.repo).resolve()
+    formulas = Path(args.formulas) if args.formulas else repo / "wiki" / "formulas"
+    staging = formulas / "staging"
+    src_yaml = staging / f"{args.entry}.yaml"
+    if not src_yaml.exists():
+        print(f"scicodewiki: no staging entry {src_yaml}", file=sys.stderr)
+        return 2
+    entry = load_entry(src_yaml)
+    seed = args.seed if args.seed is not None else \
+        int.from_bytes(os.urandom(4), "little")
+    verdict = run_gate(entry, staging, seed)
+    if verdict.result != "pass":
+        print(f"{entry.id}: FAIL in staging -- {verdict.diagnosis}")
+        return 1
+    dst_yaml = formulas / src_yaml.name
+    shutil.move(str(src_yaml), str(dst_yaml))
+    if entry.formula_impl:
+        shutil.move(str(staging / entry.formula_impl),
+                    str(formulas / entry.formula_impl))
+    append_verdict(dst_yaml, {"at": _today(), "commit": "promoted",
+                             "seed": seed, "result": "pass"})
+    print(f"{entry.id}: gate passed in staging -> promoted to formulas/")
+    return 0
+
+
 def _cmd_consistency(args) -> int:
     from .consistency import check_repo
 
-    problems = check_repo(Path(args.repo).resolve())
+    problems = check_repo(Path(args.repo).resolve(),
+                          cards_only=args.cards_only)
     for prob in problems:
         print(prob)
     print(f"consistency: {len(problems)} problems "
@@ -132,7 +168,7 @@ def _cmd_coverage(args) -> int:
 
     repo = Path(args.repo).resolve()
     package = args.package or repo.name
-    formulas = repo / "wiki" / "formulas"
+    formulas = Path(args.formulas) if args.formulas else repo / "wiki" / "formulas"
     manifest = load_manifest(formulas / "manifest.yaml")
     census = scan_package(repo, package)
     gaps = undocumented(census, manifest)
@@ -258,8 +294,9 @@ def main(argv=None) -> int:
     p = sub.add_parser("verify", help="run equivalence gates over registry entries")
     _repo_args(p)
     p.add_argument("--entry", help="verify a single entry id")
-    p.add_argument("--seed", type=int, default=0,
-                   help="holdout sampler seed (gate authority: fresh seed each run)")
+    p.add_argument("--seed", type=int, default=None,
+                   help="holdout seed for reproduction; default: fresh "
+                        "random each run (gate authority, F8)")
     p.add_argument("--no-record", dest="record", action="store_false",
                    help="do not append verdicts (CI mode)")
     p.set_defaults(fn=_cmd_verify)
@@ -289,8 +326,16 @@ def main(argv=None) -> int:
                    help="exit 1 while skeleton cards remain (outline gate)")
     p.set_defaults(fn=_cmd_scan)
 
+    p = sub.add_parser("promote", help="gate-driven staging promotion: verify in staging, move to formulas/ only on pass")
+    _repo_args(p)
+    p.add_argument("--entry", required=True)
+    p.add_argument("--seed", type=int, default=None)
+    p.set_defaults(fn=_cmd_promote)
+
     p = sub.add_parser("consistency", help="global checks: card coverage, phantom refs, thesis, glossary, duplication, links")
     _repo_args(p)
+    p.add_argument("--cards-only", action="store_true",
+                   help="outline gate: coverage + phantom only (thesis needs narratives)")
     p.set_defaults(fn=_cmd_consistency)
 
     p = sub.add_parser("preview", help="zero-setup code-layer wiki from census (funnel entry, no LLM)")
@@ -315,7 +360,7 @@ def main(argv=None) -> int:
     p.add_argument("--package", default=None)
     p.set_defaults(fn=_cmd_coverage)
 
-    p = sub.add_parser("clean", help="delete generated wiki outputs (keep wiki/formulas inputs)")
+    p = sub.add_parser("clean", help="wipe ALL scicodewiki outputs (whole wiki/, incl. formulas) for from-scratch regeneration")
     _repo_args(p)
     p.set_defaults(fn=_cmd_clean)
 

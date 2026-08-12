@@ -136,15 +136,29 @@ def over_budget(census: dict, manifest: dict, entries=None,
         u["loc"] for u in census["units"]
         if any(u["module"].startswith(m) or m.startswith(u["module"])
                for m in mods))
-    entry_mods = {e.id: e.implements.get("module", "") for e in entries}
+    # F6: prefer the bound FUNCTION's LOC over the whole module's —
+    # a page binding a 50-LOC function of a 3954-LOC module is not hot.
+    fn_loc = {}
+    for u in census["units"]:
+        for f in u.get("functions", []):
+            fn_loc[(u["module"], f["name"])] = f["loc"]
+        for c in u.get("classes", []):
+            fn_loc[(u["module"], c["name"])] = c["loc"]
+    by_id = {e.id: e for e in entries}
+
+    def entry_loc(e) -> int:
+        mod = e.implements.get("module", "")
+        fn = e.implements.get("function", "")
+        return (fn_loc.get((mod, fn))
+                or fn_loc.get((mod, fn.split(".")[-1]))
+                or loc_of([mod]))
     hot = []
     for stage in manifest["stages"]:
         pages = stage.get("pages")
         if pages:
             for sp in pages:
-                mods = [entry_mods[f] for f in sp.get("formulas", [])
-                        if f in entry_mods]
-                total = loc_of([m for m in mods if m])
+                total = sum(entry_loc(by_id[f]) for f in sp.get("formulas", [])
+                            if f in by_id)
                 if total > budget:
                     hot.append({"stage": stage["id"], "page": sp["id"],
                                 "loc": total})

@@ -45,6 +45,20 @@ def test_clean_narrative_passes(tmp_path):
     assert lint_narratives(nd) == []
 
 
+def test_over_budget_function_granular():
+    census = {"units": [{"module": "pkg.big", "file": "f", "loc": 3954,
+                         "functions": [{"name": "tiny", "loc": 50}],
+                         "classes": [], "imports": []}]}
+    manifest = {"stages": [{"id": "s", "title": "t", "modules": ["pkg.big"],
+                           "pages": [{"id": "algorithm", "title": "a",
+                                      "formulas": ["demo.x"]}]}]}
+    small = FormulaEntry.from_dict(dict(
+        ENTRY, implements={"module": "pkg.big", "function": "tiny"}))
+    assert over_budget(census, manifest, [small]) == []      # F6
+    whole = FormulaEntry.from_dict(ENTRY)                    # no function
+    assert over_budget(census, manifest, [whole])[0]["loc"] == 3954
+
+
 def test_over_budget_flags_hot_subpage():
     census = {"units": [{"module": "pkg.big", "file": "f", "loc": 3800,
                         "functions": []}]}

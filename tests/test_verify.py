@@ -110,6 +110,35 @@ def _git(repo, *args):
                                              "GIT_COMMITTER_EMAIL": "t@t"})
 
 
+def test_promote_gate_driven(tmp_path):
+    from scicodewiki.cli import main
+
+    formulas = tmp_path / "wiki" / "formulas"
+    staging = formulas / "staging"
+    staging.mkdir(parents=True)
+    (staging / "impl.py").write_text(PASS_IMPL, encoding="utf-8")
+    entry = {
+        "id": "demo.x", "kind": "algebraic", "sympy": "g == C * s",
+        "implements": {"module": "m", "function": "f"},
+        "formula_impl": "impl.py",
+        "test": {"type": "exact", "tol": 1e-12},
+    }
+    (staging / "demo.x.yaml").write_text(yaml.safe_dump(entry),
+                                         encoding="utf-8")
+    assert main(["promote", "--repo", str(tmp_path),
+                 "--entry", "demo.x", "--seed", "1"]) == 0
+    assert (formulas / "demo.x.yaml").exists()
+    assert not (staging / "demo.x.yaml").exists()
+
+    (staging / "impl2.py").write_text(DRIFT_IMPL, encoding="utf-8")
+    (staging / "demo.y.yaml").write_text(
+        yaml.safe_dump(dict(entry, id="demo.y", formula_impl="impl2.py")),
+        encoding="utf-8")
+    assert main(["promote", "--repo", str(tmp_path),
+                 "--entry", "demo.y", "--seed", "1"]) == 1
+    assert not (formulas / "demo.y.yaml").exists()   # fail stays staged
+
+
 def test_badge_states_lifecycle(tmp_path):
     repo = tmp_path / "repo"
     (repo / "src").mkdir(parents=True)

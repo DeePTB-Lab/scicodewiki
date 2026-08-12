@@ -10,14 +10,15 @@ description: Decide the page tree and content allocation (manifest cards:/thesis
 2. Consult individual cards only where a `kind` or `purpose` is ambiguous
    for allocation.
 3. Decide/refresh stages (domain-semantic units, never module names) and
-   pages (default 4-type split). Write per page:
+   pages (default 4-type split). Write per stage/page:
    - `cards:` — every scientific-kernel card lands on exactly one page;
-     plumbing/io/cli cards go to dev/API pages or are explicitly excluded
-     with a note (no silent gaps, same rule as coverage);
+   - `excluded_cards:` — plumbing/io/cli cards explicitly excluded WITH a
+     note (mechanical home, F7; kernels may NOT be excluded);
    - `thesis:` — the single reader question the page answers;
    - page priority follows centrality.
-4. Gates: `scicodewiki scan --strict` then `scicodewiki consistency`
-   (card-coverage + phantom-ref checks green).
+4. Gates: `scicodewiki scan --strict` then `scicodewiki consistency
+   --cards-only` (coverage + phantom + exclusions; thesis/glossary/dup/
+   links need narratives, so full `consistency` runs after compose).
 
 ## Never
 - allocate a card that is not in `wiki/scan/` (mechanically caught anyway);

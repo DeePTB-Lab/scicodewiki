@@ -130,7 +130,23 @@ def link_problems(narratives_dir: Path, repo: Path) -> list[str]:
     return problems
 
 
-def check_repo(repo: Path) -> list[str]:
+def excluded_problems(manifest: dict, cards_by_id: dict) -> list[str]:
+    """F7: explicit exclusions have a mechanical home; kernels may not be
+    silently excluded."""
+    problems = []
+    for stage in manifest["stages"]:
+        for ex in stage.get("excluded_cards", []):
+            cid = ex["card"] if isinstance(ex, dict) else ex
+            card = cards_by_id.get(cid)
+            if card is None:
+                problems.append(f"excluded card not in wiki/scan: {cid}")
+            elif card.get("kind") == "scientific-kernel":
+                problems.append(
+                    f"scientific-kernel card cannot be excluded: {cid}")
+    return problems
+
+
+def check_repo(repo: Path, cards_only: bool = False) -> list[str]:
     scan_dir = repo / "wiki" / "scan"
     narratives = repo / "wiki" / "narratives"
     manifest_path = repo / "wiki" / "formulas" / "manifest.yaml"
@@ -149,8 +165,11 @@ def check_repo(repo: Path) -> list[str]:
                             "run the outline step")
         problems += card_coverage(cards, manifest)
         problems += phantom_card_refs(manifest, card_ids)
-        problems += thesis_problems(manifest, narratives)
-    problems += glossary_problems(cards, narratives)
-    problems += duplication_problems(narratives)
-    problems += link_problems(narratives, repo)
+        problems += excluded_problems(manifest, {c["card"]: c for c in cards})
+        if not cards_only:          # F5: thesis needs narratives (compose)
+            problems += thesis_problems(manifest, narratives)
+    if not cards_only:
+        problems += glossary_problems(cards, narratives)
+        problems += duplication_problems(narratives)
+        problems += link_problems(narratives, repo)
     return problems

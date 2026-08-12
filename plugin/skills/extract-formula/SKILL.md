@@ -12,7 +12,9 @@ You are the proposer. The mechanical gate decides. Your prose is never authority
 - Check `formulas/` first — the registry may already own this stage.
 
 ## 2. Ground in literature (capability leg, not authority)
-- web search / arXiv for the canonical form; mature theory is pinned in literature.
+- Source hierarchy: web search / arXiv first; **offline fallback = repo-local
+  authority** (module docstrings that transcribe the formula, docs/ sections
+  pinning conventions) — record which leg you used in `provenance.via`.
 - Record `references` with paper + equation number; paywalled classics → ask the user for a local PDF.
 - Papers disagree on conventions (FWHM/HWHM, ħ/h, angular/cyclic). Do NOT silently pick one — record the mapping in `convention_map`.
 
@@ -42,8 +44,14 @@ exists without refactoring the target, take a coarser stage or
 
 ## 4. Iterate, then hand to the gate
 - Scratch self-tests are free (your inputs, your iteration loop).
-- Promote staging → `formulas/` only via the gate: `scicodewiki verify --repo <repo> --entry <id>`. The gate draws fresh holdout seeds you never see.
+- **Promote via `scicodewiki promote --repo <repo> --entry <id>`**: the gate
+  runs on staging and moves entry + mirror into `formulas/` ONLY on pass.
+  Never copy staging files by hand. Holdout seed is fresh-random by default
+  (`--seed` only for reproduction).
 - "ratio constant" diagnosis → multiplicative drift (conventional factors are enumerated for you); non-constant → structural. Fix the mirror; NEVER loosen `tol`.
+- If a `kind: novel` candidate turns out to admit a real equivalence mirror
+  (deterministic grouping etc.), record the STRONGER `test.type: exact` and
+  note the deviation in the entry — oracle is the floor, not the ceiling.
 
 ## 5. Never
 - render or treat an unverified formula as fact;
