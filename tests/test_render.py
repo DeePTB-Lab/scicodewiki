@@ -60,6 +60,28 @@ def test_index_lists_states(tmp_path):
     assert "⚪" in idx and "✅" in idx
 
 
+def test_three_level_nav(tmp_path):
+    formulas = tmp_path / "wiki" / "formulas"
+    formulas.mkdir(parents=True)
+    (formulas / "manifest.yaml").write_text(yaml.safe_dump(
+        {"repo": "demo", "stages": [
+            {"id": "s1", "title": "阶段一", "modules": ["m"],
+             "pages": [{"id": "a", "title": "主题甲"},
+                       {"id": "b", "title": "主题乙",
+                        "formulas": ["demo.x"]}]}]}),
+        encoding="utf-8")
+    (formulas / "e.yaml").write_text(yaml.safe_dump(ENTRY), encoding="utf-8")
+    out = tmp_path / "wiki"
+    written = [p.name for p in build(tmp_path, formulas, out)]
+    assert {"stage-s1-a.md", "stage-s1-b.md"} <= set(written)
+    b = (out / "pages" / "stage-s1-b.md").read_text(encoding="utf-8")
+    assert "demo.x" in b and "主题乙" in b
+    a = (out / "pages" / "stage-s1-a.md").read_text(encoding="utf-8")
+    assert "demo.x" not in a                      # cards only where assigned
+    nav_txt = (out / "mkdocs.yml").read_text(encoding="utf-8")
+    assert "主题甲" in nav_txt and "主题乙" in nav_txt
+
+
 def test_build_writes_pages(tmp_path):
     formulas = tmp_path / "formulas"
     formulas.mkdir()

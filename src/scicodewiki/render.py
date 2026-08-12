@@ -104,9 +104,13 @@ def formula_card_md(entry: FormulaEntry) -> str:
 
 
 def subsystem_page_md(stage: dict, entries: list[FormulaEntry],
-                      repo: Path, narrative: str = "") -> str:
-    lines = [f"# {stage['title']}", "",
-             f"管线阶段 `{stage['id']}`。", ""]
+                      repo: Path, narrative: str = "",
+                      title: str | None = None, crumb: str = "") -> str:
+    heading = title or stage["title"]
+    lines = [f"# {heading}", ""]
+    if crumb:
+        lines += [crumb, ""]
+    lines += [f"管线阶段 `{stage['id']}`。", ""]
     mods = stage.get("modules", [])
     if mods:
         lines += ["**模块**", ""]
@@ -157,25 +161,54 @@ def build(repo: Path, formulas: Path, out: Path) -> list[Path]:
     narratives = out / "narratives"
     written = []
     stage_nav = []
+    landing = {}                       # stage id -> reader landing file
     for stage in manifest["stages"]:
         mods = stage.get("modules", [])
         stage_entries = [e for e in entries
                          if any(e.implements.get("module", "")
                                 .startswith(m) for m in mods)]
-        npath = narratives / f"{stage['id']}.md"
-        narrative = npath.read_text(encoding="utf-8") if npath.exists() else ""
-        page = subsystem_page_md(stage, stage_entries, repo, narrative)
-        fname = f"stage-{stage['id']}.md"
-        (pages / fname).write_text(page, encoding="utf-8")
-        written.append(pages / fname)
-        stage_nav.append({stage["title"]: fname})
+        subpages = stage.get("pages")
+        if not subpages:
+            npath = narratives / f"{stage['id']}.md"
+            narrative = npath.read_text(encoding="utf-8") \
+                if npath.exists() else ""
+            page = subsystem_page_md(stage, stage_entries, repo, narrative)
+            fname = f"stage-{stage['id']}.md"
+            (pages / fname).write_text(page, encoding="utf-8")
+            written.append(pages / fname)
+            stage_nav.append({stage["title"]: fname})
+            landing[stage["id"]] = fname
+            continue
+        # 3-level nav: stage node expands into topic subpages
+        assigned = set()
+        for sp in subpages:
+            assigned.update(sp.get("formulas", []))
+        children = []
+        for i, sp in enumerate(subpages):
+            fname = f"stage-{stage['id']}-{sp['id']}.md"
+            npath = narratives / f"{stage['id']}-{sp['id']}.md"
+            narrative = npath.read_text(encoding="utf-8") \
+                if npath.exists() else ""
+            cards = [e for e in stage_entries
+                     if e.id in sp.get("formulas", [])]
+            if i == 0:   # unassigned cards fall to the first subpage
+                cards += [e for e in stage_entries
+                          if e.id not in assigned]
+            page = subsystem_page_md(
+                stage, cards, repo, narrative, title=sp["title"],
+                crumb=f"*{stage['title']} › {sp['title']}*")
+            (pages / fname).write_text(page, encoding="utf-8")
+            written.append(pages / fname)
+            children.append({sp["title"]: fname})
+            landing.setdefault(stage["id"], fname)
+        stage_nav.append({stage["title"]: children})
 
     (pages / "registry-index.md").write_text(
         registry_index_md(entries, repo), encoding="utf-8")
     written.append(pages / "registry-index.md")
 
     (pages / "index.md").write_text(
-        index_md(manifest, entries, repo), encoding="utf-8")
+        index_md(manifest, entries, repo, landing), encoding="utf-8")
     written.append(pages / "index.md")
 
     # zone-1 unified theory page (canonical forms + convention boxes live
@@ -245,7 +278,8 @@ def build(repo: Path, formulas: Path, out: Path) -> list[Path]:
     return written
 
 
-def index_md(manifest: dict, entries: list[FormulaEntry], repo: Path) -> str:
+def index_md(manifest: dict, entries: list[FormulaEntry], repo: Path,
+             landing: dict | None = None) -> str:
     """Landing page: what the code does, pipeline at a glance, reading map.
     Pure documentation — no verification plumbing on reader surfaces."""
     stages = manifest["stages"]
@@ -263,6 +297,7 @@ def index_md(manifest: dict, entries: list[FormulaEntry], repo: Path) -> str:
                  if any(e.implements.get("module", "").startswith(m)
                         for m in mods)])
         extra = f"（{n} 条机读公式）" if n else ""
-        lines.append(f"- [{s['title']}](stage-{s['id']}.md){extra}")
+        target = (landing or {}).get(s["id"], f"stage-{s['id']}.md")
+        lines.append(f"- [{s['title']}]({target}){extra}")
     lines += ["", "开发与维护入口见左侧「开发与参考」。", ""]
     return "\n".join(lines)

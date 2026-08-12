@@ -283,6 +283,19 @@ scicodewiki/
 产品存活于生态变迁。生态集成面向开放标准（AGENTS.md/Skills/MCP/hooks）而非
 单一厂商机制；plugin 只是 Claude 侧的分发包装。
 
+### 生成契约（输入/输出分离 + wipe 纪律）
+
+- **永不删**：目标仓库自有内容——源码、docs/、README、examples。
+- **全部 wiki/ = 输出**（含 `wiki/formulas/` 注册表与 manifest）：
+  `scicodewiki clean` 清空整个 wiki/；测试模式从头再生，链路为
+  **bootstrap**（manifest 推断）→ **extract**（agent 提议条目 + 等价门
+  判决）→ **narrate**（按 chapter-spec 写叙事）→ **build/verify**（确定性）。
+- 稳态下 wiki/ 提交进仓库供 CI/读者消费；"从头再生"是工具测试纪律，
+  两种模式共存。目标仓库里不允许存在工具再生不出的手工 wiki 内容。
+- 生成分工：bootstrap/extract/narrate = agent 步（extract 的判决权在
+  机械门）；build/verify/drift = 确定性步。章节质量纪律编码在
+  chapter-spec，不编码在案例里。
+
 ### preview 模式（漏斗宽口，v1）
 
 最低要求入口：不建注册表/不写公式/不配 CI/不改仓库；一条命令生成代码层 wiki
