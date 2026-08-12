@@ -70,11 +70,17 @@ repo ──▶ S1 结构分解 ──▶ S2 公式提取与验证 ──▶ S3 �
 
 - **census（确定性）**：`scicodewiki census` = stdlib AST 盘点
   （模块/函数/LOC），分解的 ground truth（Python；多语言 Tree-Sitter = v2）。
-- **语义分组**：bootstrap 在 census 单元上分组为管线树（manifest），
-  不凭空推断。
+- **scan 中间产物**：`scicodewiki scan` 由 census 生成 skill 头式卡片
+  （YAML frontmatter，size-capped）：确定性字段（unit/file/loc/functions/
+  classes/imports/centrality）预填且每次 scan 刷新；语义字段 agent 按
+  **读深分档**填（kernel 读全文 / plumbing 只读 docstring+签名，
+  provenance.depth 透明展示）。`_map.yaml` = 卡片的确定性投影 =
+  有界全局视图（outline 只读 map）；**centrality = 入度**（机械 import
+  边，aider repomap 的教训：引用边必须确定性提取），给 map 信息序。
+- **语义分组**：bootstrap 从 _map/卡片分组为管线树（manifest），不凭空推断。
 - **完整性**：`scicodewiki coverage` = census − manifest → undocumented
   清单进审计面 + CI 警告；沉默缺口变可见缺口。
-- **规模触发递归**：子页绑定 >1500 LOC 时 narrate 按组件拆分、bottom-up
+- **规模触发递归**：子页绑定 >1500 LOC 时 compose 按子卡拆分、bottom-up
   综合，深度 ≤2（回退机制，非默认）。模块树/叶子预算思想借自 CodeWiki，
   但递归只在规模触发时启用。
 - **管线树**：物理工作流（如 relax → FC2 → FC3 → linewidth），wiki 顶层组织原则。
@@ -94,11 +100,18 @@ repo ──▶ S1 结构分解 ──▶ S2 公式提取与验证 ──▶ S3 �
    （人审 = 打开被引公式看一眼），但不改变权威：候选仍过机械门，
    文献↔SymPy 腿保持 agent 提议 + 人审
 
-### S3 代码层叙事
+### S3 代码层叙事：outline → compose → edit
 
-- v1 = agent 逐页读码生成（phonax 量级足够）。CodeWiki 的递归聚合/DP 分割
-  解决的是规模不是深度，降级为 v2 大仓库可选项——复杂度预算属于验证层。
-  跨模块引用代替重复文本。v0 手写/单次生成。
+- **scan 把理解与写作分离**：compose 从分配的卡片（manifest `cards:`）写作，
+  代码**经指针按需重读**（locate_function 按名查找，行号漂移免疫）——
+  卡 = 理解+指针，非缓存。全局结构由 outline 从 _map 决定（森林），
+  每页写作局部但已分配（树木），上下文有界 by construction。
+- **outline（信息架构）**：每页写 `thesis:`（"本页回答什么问题"），
+  lint 半机械检查叙事开头回应；页优先级参考 centrality。IA 是质量上限。
+- **edit（对抗校订）**：独立 editor 角色按清单批评 → critique 文件
+  （`wiki/scan/_edits/`，不渲染）→ 修订；editor 不新增内容。
+- CodeWiki 的递归聚合/DP 分割解决的是规模不是深度，降级为 v2 大仓库
+  可选项。跨模块引用代替重复文本。
 - **内容纪律**：代码叙事永远不复述注册表拥有的数学。
   散文写"此函数计算三声子矩阵元（→ `linewidth.matrix_element_V`）"，
   讲输入输出、职责、内存布局、性能；公式让给公式卡片。单一事实来源。
@@ -110,6 +123,20 @@ repo ──▶ S1 结构分解 ──▶ S2 公式提取与验证 ──▶ S3 �
   **范围纪律**：理论叙事以注册表 implements 边界为界——每页只写到理解其
   公式卡所需的深度，止于钉死规范形式的文献；不写教科书。
   文献覆盖两条腿：web search/arXiv 覆盖新文献，用户本地 PDF 覆盖付费墙老文献。
+
+### 写作质量控制栈（"质量由什么控制"的回答）
+
+1. **spec 层**：templates/chapter-spec.md（骨架 + 硬规则）；
+2. **craft 层**：compose skill 写作技艺（读者问题驱动/结论先行/术语规范/
+   交叉引用不重复/数字必引）+ 样板摘录 few-shot 锚定；
+3. **editor 层**：edit-prose 对抗校订；
+4. **mechanical 层**：lint + consistency（card 覆盖/phantom/thesis/glossary/
+   重复/链接）+ lint_scan——纪律即代码；
+5. **anchor 层**：样板页（phonax 线宽章）作人审参照。
+
+权重序：outline(IA) > craft > editor > lint。
+人审顺序：先读 manifest thesis 列表 + _map，再抽散文。
+
 ### 图生成（一等交付物）
 
 | 类型 | Mermaid 形态 | 来源 | 页面归属 |
@@ -292,15 +319,17 @@ scicodewiki/
 ### 生成契约（输入/输出分离 + wipe 纪律）
 
 - **永不删**：目标仓库自有内容——源码、docs/、README、examples。
-- **全部 wiki/ = 输出**（含 `wiki/formulas/` 注册表与 manifest）：
+- **全部 wiki/ = 输出**（含 `wiki/formulas/` 注册表与 manifest、
+  `wiki/scan/` 卡片 + _map + _edits）：
   `scicodewiki clean` 清空整个 wiki/；测试模式从头再生，链路为
   **bootstrap**（manifest 推断）→ **extract**（agent 提议条目 + 等价门
-  判决）→ **narrate**（按 chapter-spec 写叙事）→ **build/verify**（确定性）。
+  判决）→ **outline**（thesis + cards 分配）→ **compose**（从卡片写作，
+  指针重读）→ **edit**（对抗校订）→ **build/verify**（确定性）。
 - 稳态下 wiki/ 提交进仓库供 CI/读者消费；"从头再生"是工具测试纪律，
   两种模式共存。目标仓库里不允许存在工具再生不出的手工 wiki 内容。
-- 生成分工：bootstrap/extract/narrate = agent 步（extract 的判决权在
-  机械门）；build/verify/drift = 确定性步。章节质量纪律编码在
-  chapter-spec，不编码在案例里。
+- 生成分工：bootstrap/scan-repo/outline/compose/edit = agent 步（extract
+  的判决权在机械门）；build/verify/drift = 确定性步。章节质量纪律编码在
+  chapter-spec + compose/edit skills，不编码在案例里。
 - **可复现性契约**：不追求散文逐字确定。结构层（公式卡/导航/链接/
   覆盖报告）由注册表确定渲染，零 diff；散文层允许 agent 自由，换两条
   机械约束：定量陈述必带引用（`scicodewiki lint` 强制）、机器词汇零

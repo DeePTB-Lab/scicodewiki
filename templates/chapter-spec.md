@@ -1,7 +1,9 @@
-# 章节 spec：narrate 生成的骨架与写作纪律
+# 章节 spec：compose 生成的骨架与写作纪律
 
-narrate 步骤的产出 = `wiki/narratives/<stage>-<page>.md`（子系统子页）与
-`wiki/narratives/theory.md`（1 区理论页）。内容必须**从目标仓库源码与
+compose 步骤的产出 = `wiki/narratives/<stage>-<page>.md`（子系统子页）与
+`wiki/narratives/theory.md`（1 区理论页）。compose 从 scan 卡片写作
+（代码经指针按需重读）；写作技艺（读者问题驱动/结论先行/术语规范/
+交叉引用/样板锚定）见 plugin/skills/compose。内容必须**从目标仓库源码与
 docs/ 推导**，不得凭模型记忆；每条定量陈述带出处。
 
 ## 子页骨架（按 manifest `pages:` 的页面类型）

@@ -12,28 +12,69 @@ import json
 from pathlib import Path
 
 
+def _raw_imports(tree: ast.Module, module: str, package: str) -> list[str]:
+    """Import targets as dot-paths; relative imports resolved by level.
+    (aider-repomap lesson: reference edges are extracted mechanically.)"""
+    own = module.split(".")
+    targets = []
+    for n in ast.walk(tree):
+        if isinstance(n, ast.Import):
+            targets += [a.name for a in n.names]
+        elif isinstance(n, ast.ImportFrom):
+            if n.level == 0:
+                if n.module:
+                    targets.append(n.module)
+            else:
+                base = own[:-1]
+                up = n.level - 1
+                if up > len(base):
+                    continue
+                base = base[: len(base) - up]
+                targets.append(".".join(base + ([n.module] if n.module else [])))
+    return [t for t in targets if t == package or t.startswith(package + ".")]
+
+
 def scan_package(repo: Path, package: str) -> dict:
     root = Path(repo) / package
     if not root.is_dir():
         raise ValueError(f"package dir not found: {root}")
     units = []
+    raw = {}
     for py in sorted(root.rglob("*.py")):
         src = py.read_text(encoding="utf-8")
         try:
             tree = ast.parse(src)
         except SyntaxError:
             continue
+        module = str(py.relative_to(repo).with_suffix("")).replace("/", ".")
         functions = [
             {"name": n.name, "loc": n.end_lineno - n.lineno + 1}
             for n in ast.walk(tree)
             if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))
         ]
+        classes = [
+            {"name": c.name, "loc": c.end_lineno - c.lineno + 1,
+             "methods": [n.name for n in c.body
+                         if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))]}
+            for c in ast.walk(tree) if isinstance(c, ast.ClassDef)
+        ]
+        raw[module] = _raw_imports(tree, module, package)
         units.append({
-            "module": str(py.relative_to(repo).with_suffix("")).replace("/", "."),
+            "module": module,
             "file": str(py.relative_to(repo)),
             "loc": len(src.splitlines()),
             "functions": functions,
+            "classes": classes,
+            "imports": [],
         })
+    modules = {u["module"] for u in units}
+
+    def exists(target: str) -> bool:
+        return target in modules or any(
+            m.startswith(target + ".") for m in modules)
+
+    for u in units:
+        u["imports"] = sorted({t for t in raw[u["module"]] if exists(t)})
     return {"package": package, "units": units}
 
 
@@ -62,7 +103,8 @@ def undocumented(census: dict, manifest: dict) -> list[dict]:
 
 def preview_manifest(census: dict, repo_name: str) -> dict:
     """Deterministic zero-LLM manifest for preview mode: one stage per
-    top-level subpackage. Funnel entry; extract/narrate refine later."""
+    top-level subpackage. Funnel entry; extract/outline/compose refine
+    later."""
     stages = {}
     for u in census["units"]:
         parts = u["module"].split(".")

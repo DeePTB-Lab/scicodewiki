@@ -60,6 +60,22 @@ def test_index_lists_states(tmp_path):
     assert "⚪" in idx and "✅" in idx
 
 
+def test_landing_dependency_graph_from_map(tmp_path):
+    from scicodewiki.render import dep_mermaid_from_map
+    mapping = {"subpackages": {"phonons": {
+        "units": [
+            {"card": "p.linewidth", "centrality": 3},
+            {"card": "p.dynamical", "centrality": 2},
+            {"card": "p.mesh", "centrality": 0}],
+        "cross_links": [["p.linewidth", "p.dynamical"],
+                        ["p.linewidth", "p.mesh"]]}}}
+    mer = dep_mermaid_from_map(mapping, top_n=2)
+    assert "p.linewidth" in mer and "p.dynamical" in mer
+    assert "p.mesh" not in mer                      # below top-N
+    assert "flowchart TD" in mer
+    assert dep_mermaid_from_map({"subpackages": {}}, 2) == ""
+
+
 def test_three_level_nav(tmp_path):
     formulas = tmp_path / "wiki" / "formulas"
     formulas.mkdir(parents=True)

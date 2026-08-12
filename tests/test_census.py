@@ -11,10 +11,15 @@ def _fake_repo(tmp_path):
     (pkg / "sub").mkdir(parents=True)
     (pkg / "__init__.py").write_text("", encoding="utf-8")
     (pkg / "core.py").write_text(
+        "from pkg.sub import extra\n\n\n"
+        "class Widget:\n"
+        "    def spin(self):\n"
+        "        return 1\n\n\n"
         "def f():\n    return 1\n\n\ndef g():\n    return 2\n",
         encoding="utf-8")
     (pkg / "sub" / "extra.py").write_text(
-        "def h():\n    return 3\n", encoding="utf-8")
+        "from ..core import f\n\n\ndef h():\n    return f() + 2\n",
+        encoding="utf-8")
     return tmp_path / "demo"
 
 
@@ -24,7 +29,18 @@ def test_scan_inventory(tmp_path):
     mods = {u["module"] for u in census["units"]}
     assert {"pkg.core", "pkg.sub.extra"} <= mods
     core = next(u for u in census["units"] if u["module"] == "pkg.core")
-    assert {f["name"] for f in core["functions"]} == {"f", "g"}
+    assert {f["name"] for f in core["functions"]} >= {"f", "g", "spin"}
+    assert core["classes"] == [{"name": "Widget", "loc": 3,
+                                "methods": ["spin"]}]
+
+
+def test_mechanical_import_edges(tmp_path):
+    repo = _fake_repo(tmp_path)
+    census = scan_package(repo, "pkg")
+    core = next(u for u in census["units"] if u["module"] == "pkg.core")
+    extra = next(u for u in census["units"] if u["module"] == "pkg.sub.extra")
+    assert core["imports"] == ["pkg.sub"]          # absolute, prefix edge
+    assert extra["imports"] == ["pkg.core"]        # relative level-2 resolved
 
 
 def test_undocumented_gaps(tmp_path):

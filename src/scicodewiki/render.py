@@ -207,8 +207,14 @@ def build(repo: Path, formulas: Path, out: Path) -> list[Path]:
         registry_index_md(entries, repo), encoding="utf-8")
     written.append(pages / "registry-index.md")
 
+    dep = ""
+    map_path = repo / "wiki" / "scan" / "_map.yaml"
+    if map_path.exists():
+        import yaml as _yaml
+        dep = dep_mermaid_from_map(_yaml.safe_load(
+            map_path.read_text(encoding="utf-8")))
     (pages / "index.md").write_text(
-        index_md(manifest, entries, repo, landing), encoding="utf-8")
+        index_md(manifest, entries, repo, landing, dep=dep), encoding="utf-8")
     written.append(pages / "index.md")
 
     # zone-1 unified theory page (canonical forms + convention boxes live
@@ -278,19 +284,45 @@ def build(repo: Path, formulas: Path, out: Path) -> list[Path]:
     return written
 
 
+def dep_mermaid_from_map(mapping: dict, top_n: int = 12) -> str:
+    """Deterministic dependency graph (CodeWiki's dependency diagram,
+    mechanical version): nodes = centrality top-N, edges = cross_links."""
+    units = [u for sub in mapping.get("subpackages", {}).values()
+             for u in sub.get("units", [])]
+    top = {u["card"] for u in
+           sorted(units, key=lambda u: -u.get("centrality", 0))[:top_n]}
+    edges = []
+    for sub in mapping.get("subpackages", {}).values():
+        for a, b in sub.get("cross_links", []):
+            if a in top and b in top and a != b:
+                edges.append((a, b))
+    if not edges:
+        return ""
+    lines = ["```mermaid", "flowchart TD"]
+    for a, b in sorted(set(edges)):
+        lines.append(f'  {a.split(".")[-1]}["{a}"] --> '
+                     f'{b.split(".")[-1]}["{b}"]')
+    lines.append("```")
+    return "\n".join(lines)
+
+
 def index_md(manifest: dict, entries: list[FormulaEntry], repo: Path,
-             landing: dict | None = None) -> str:
+             landing: dict | None = None, dep: str = "") -> str:
     """Landing page: what the code does, pipeline at a glance, reading map.
     Pure documentation — no verification plumbing on reader surfaces."""
     stages = manifest["stages"]
     lines = [f"# {manifest['repo']}", ""]
     if manifest.get("preview"):
         lines += ["> **预览**：代码层导航，未含公式层与叙事。",
-                  "> 完整验证文档：bootstrap → extract → narrate → build。",
+                  "> 完整验证文档：census → scan → bootstrap → extract → "
+                  "outline → compose → build。",
                   ""]
     lines += ["科学计算文档：按物理工作流组织，公式与代码绑定一一对应，",
-             "理论取文献规范形式，约定差异显式换算。", "",
-             "```mermaid", "flowchart LR"]
+             "理论取文献规范形式，约定差异显式换算。", ""]
+    if dep:
+    if dep:
+        lines += ["## 依赖总览", "", dep, ""]
+    lines += ["## 管线总览", "", "```mermaid", "flowchart LR"]
     lines.append("  " + " --> ".join(
         f'{s["id"]}["{s["title"]}"]' for s in stages))
     lines += ["```", "", "## 阅读地图", ""]

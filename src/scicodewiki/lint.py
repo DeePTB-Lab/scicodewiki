@@ -23,7 +23,7 @@ def lint_narratives(narratives_dir: Path) -> list[str]:
     problems = []
     nd = Path(narratives_dir)
     if not nd.is_dir():
-        return [f"{nd}: no narratives dir (run narrate first)"]
+        return [f"{nd}: no narratives dir (run compose first)"]
     for md in sorted(nd.glob("*.md")):
         text = md.read_text(encoding="utf-8")
         for lineno, line in enumerate(text.splitlines(), 1):

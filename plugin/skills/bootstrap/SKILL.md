@@ -12,6 +12,9 @@ repo's own content; never invent stages the docs/code do not support.
 
 0. Run `scicodewiki census --repo <repo>` first — the AST inventory is
    your ground truth; group ONLY census units, never inferred phantoms.
+0.5 If `wiki/scan/_map.yaml` exists, group FROM the map + card frontmatter
+   (kinds, `cross_links`, `doc_anchors`, `literature_hints`) instead of raw
+   exploration; `cross_links` inform the physical-workflow order.
 1. Read README, the docs/ listing, and the package layout
    (`scicodewiki`-agnostic: any scientific repo).
 2. Identify the **physical workflow order** (dependency chain, e.g.
