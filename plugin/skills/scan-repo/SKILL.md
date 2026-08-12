@@ -28,6 +28,10 @@ description: Fill semantic fields on wiki/scan/ skeleton cards (tiered read dept
    summarizes children.
 5. Loop `scicodewiki scan` until 0 problems and 0 skeleton pending
    (`lint_scan` is the gate; a rejected card is a rewrite).
+6. Large repos — fan out: spawn one subagent per card batch (your CLI's
+   native mechanism); each subagent fills ONLY its assigned cards and
+   records nothing else; the coordinator merges, then runs the final
+   `scan` + gates. Cards are independent artifacts, so this is safe.
 
 ## Never
 - read the whole repo into context to fill one card;

@@ -42,6 +42,12 @@ paragraph.
 `scicodewiki build` → `lint` → `coverage` (over-budget pages split
 bottom-up, recursion ≤ 2).
 
+## 7. Large repos
+Fan out one subagent per page (narratives are independent files); the
+coordinator runs `edit-prose` + the gate chain afterwards — global
+consistency (duplication/glossary) is exactly what the coordinator-level
+`consistency` check is for.
+
 ## Never
 - edit `wiki/formulas/`;
 - paste registry structures (convention_map, verdicts, badges) into reader pages;
