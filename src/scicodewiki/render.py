@@ -116,7 +116,13 @@ def subsystem_page_md(stage: dict, entries: list[FormulaEntry],
         lines += ["**模块**", ""]
         for m in mods:
             src = m.replace(".", "/")
-            lines.append(f"- `{m}` → [`{src}.py`](../../{src}.py)")
+            # G: package modules are directories, not .py files
+            if (repo / f"{src}.py").exists():
+                lines.append(f"- `{m}` → [`{src}.py`](../../{src}.py)")
+            elif (repo / src).is_dir():
+                lines.append(f"- `{m}` → [`{src}/`](../../{src})")
+            else:
+                lines.append(f"- `{m}`")
         lines += [""]
     docs = stage.get("docs", [])
     if docs:

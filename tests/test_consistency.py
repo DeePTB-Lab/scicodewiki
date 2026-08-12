@@ -80,6 +80,15 @@ def test_glossary_and_duplication(tmp_path):
     assert duplication_problems(narr)
 
 
+def test_terms_str_value_tolerated(tmp_path):
+    repo, metas = _wiki(tmp_path, alloc=("a", "b"))
+    metas[0]["terms"] = {"半高半宽（HWHM）": "半峰宽"}     # E: str, not list
+    narr = repo / "wiki" / "narratives"
+    narr.mkdir(exist_ok=True)
+    (narr / "s.md").write_text("用半峰宽描述。\n", encoding="utf-8")
+    assert glossary_problems(metas, narr)                # no crash, flagged
+
+
 def test_links(tmp_path):
     repo, _ = _wiki(tmp_path, alloc=("a", "b"))
     (repo / "docs").mkdir(parents=True)

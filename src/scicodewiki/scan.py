@@ -23,10 +23,14 @@ PURPOSE_CAP = 120          # chars
 BODY_CAP_LINES = 60        # card body cap
 MIN_CHILD_LOC = 40         # split threshold for functions/classes
 
-# mechanical kind hint: dense numeric marks -> kernel candidate (controls
-# read depth only; the scan-repo agent makes the final kind call)
-_KERNEL_MARKS = ("einsum", "linalg", "fft", "hbar", "HBAR", "integrate",
-                 "tetrahedra", "np.sqrt", "occupation", "linewidth")
+# mechanical kind hint (A: generalized beyond phonons): source marks +
+# module-name marks -> kernel candidate. Controls read depth only; the
+# scan-repo agent makes the final kind call and records overrides in notes.
+_SRC_MARKS = ("einsum", "linalg.eig", "jnp.linalg", "fft", "hbar", "HBAR",
+              "integrate", "tetrahedra", "occupation", "linewidth",
+              "hamiltonian", "onsite", "bloch", "segment_sum", "interpolat")
+_NAME_MARKS = ("formula", "loss", "hamiltonian", "operator", "eigen",
+               "rotation", "onsite", ".sk")
 
 _SEMANTIC = ("purpose", "key_symbols", "inputs", "outputs", "depends_on",
              "doc_anchors", "literature_hints", "conventions",
@@ -62,7 +66,7 @@ def _card_text(meta: dict, body: str) -> str:
 
 def _kind_hint(module: str, src: str) -> str:
     low = module.lower()
-    if any(m in src for m in _KERNEL_MARKS):
+    if any(m in src for m in _SRC_MARKS) or any(n in low for n in _NAME_MARKS):
         return "scientific-kernel"
     if ".cli" in low or low.endswith("cli"):
         return "cli"
@@ -124,6 +128,8 @@ def skeleton_cards(census: dict, budget: int = 1500,
                         "centrality": cent[u["module"]],
                     }
             for c in u["classes"]:
+                if c["loc"] < MIN_CHILD_LOC:      # I: fold tiny classes in
+                    continue
                 cid = f"{u['module']}.{c['name']}"
                 children.append(cid)
                 out[cid] = {

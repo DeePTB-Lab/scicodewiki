@@ -17,6 +17,9 @@ You are the proposer. The mechanical gate decides. Your prose is never authority
   pinning conventions) — record which leg you used in `provenance.via`.
 - Record `references` with paper + equation number; paywalled classics → ask the user for a local PDF.
 - Papers disagree on conventions (FWHM/HWHM, ħ/h, angular/cyclic). Do NOT silently pick one — record the mapping in `convention_map`.
+- The offline leg depends on the repo having substance in docstrings/docs;
+  a docstring-poor repo has no offline authority — record
+  `provenance.via: none-found` and leave the claim unverified until grounded (K).
 
 ## 3. Write the staging deliverables (schemas/formula-entry.schema.json)
 - `formulas/staging/<id>.yaml`: id / kind / sympy / latex / implements / symbol_identity / convention_map / references / provenance / test
@@ -24,6 +27,10 @@ You are the proposer. The mechanical gate decides. Your prose is never authority
   - `sample(rng) -> ctx` — random named primitive arrays
   - `mirror(ctx) -> array` — SymPy-lambdified evaluation
   - `target(ctx) -> array` — the REAL code path, random data injected at a documented seam (patch only data-provider methods)
+- Declare symbols with the SAME domain the code actually accepts (M):
+  `Abs` over `positive=True` when the target applies abs() to signed
+  inputs; likewise min/max traps. A wrong assumption reads as a
+  non-constant ratio at the gate.
 
 ## 3b. Finding seams (make target() run REAL code on random data)
 

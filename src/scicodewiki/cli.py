@@ -69,6 +69,29 @@ def _cmd_preview(args) -> int:
     return 0
 
 
+def _cmd_signatures(args) -> int:
+    import ast as _ast
+
+    from .census import scan_package
+
+    repo = Path(args.repo).resolve()
+    package = args.package or repo.name
+    for u in scan_package(repo, package)["units"]:
+        path = repo / u["file"]
+        try:
+            tree = _ast.parse(path.read_text(encoding="utf-8"))
+        except SyntaxError:
+            continue
+        for n in _ast.walk(tree):
+            if not isinstance(n, (_ast.FunctionDef, _ast.AsyncFunctionDef)):
+                continue
+            doc = _ast.get_docstring(n) or ""
+            first = doc.strip().splitlines()[0] if doc.strip() else ""
+            print(f"{u['module']}.{n.name}({_ast.unparse(n.args)})"
+                  f"  # {first[:80]}")
+    return 0
+
+
 def _cmd_drift_cards(args) -> int:
     import subprocess
 
@@ -103,6 +126,7 @@ def _cmd_drift_cards(args) -> int:
 def _cmd_promote(args) -> int:
     """Gate-driven staging promotion (F3): the gate runs on staging; only a
     pass moves the entry + mirror into formulas/."""
+    import os
     import shutil
 
     from .registry import append_verdict, load_entry
@@ -356,6 +380,11 @@ def main(argv=None) -> int:
     p.add_argument("--strict", action="store_true",
                    help="exit 1 while skeleton cards remain (outline gate)")
     p.set_defaults(fn=_cmd_scan)
+
+    p = sub.add_parser("signatures", help="dump docstring-first-line + signatures per unit (plumbing-tier tooling, J)")
+    _repo_args(p)
+    p.add_argument("--package", default=None)
+    p.set_defaults(fn=_cmd_signatures)
 
     p = sub.add_parser("drift-cards", help="reset scan cards whose bound file changed since last scan (git diff)")
     _repo_args(p)

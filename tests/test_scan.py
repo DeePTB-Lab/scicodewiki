@@ -121,6 +121,35 @@ def test_map_aggregation_and_centrality(tmp_path):
     yaml.safe_load((scan_dir / "_map.yaml").read_text(encoding="utf-8"))
 
 
+def test_kind_hint_generalized(tmp_path):
+    pkg = tmp_path / "demo2" / "pkg"
+    pkg.mkdir(parents=True)
+    (pkg / "__init__.py").write_text("", encoding="utf-8")
+    (pkg / "hamiltonian_builder.py").write_text(
+        "def build():\n    return 1\n", encoding="utf-8")   # name mark only
+    (pkg / "dataset.py").write_text(
+        "import numpy as np\n\n\ndef load():\n    return np.sqrt(2)\n",
+        encoding="utf-8")                                    # weak mark only
+    census = scan_package(tmp_path / "demo2", "pkg")
+    sk = skeleton_cards(census, repo=tmp_path / "demo2")
+    assert sk["pkg.hamiltonian_builder"]["kind_hint"] == "scientific-kernel"
+    assert sk["pkg.dataset"]["kind_hint"] == "plumbing"     # A: no np.sqrt FP
+
+
+def test_tiny_classes_folded(tmp_path):
+    pkg = tmp_path / "demo3" / "pkg"
+    pkg.mkdir(parents=True)
+    (pkg / "__init__.py").write_text("", encoding="utf-8")
+    big = "".join(BIG_FUNC % i for i in range(30))
+    (pkg / "core.py").write_text(
+        "class Tiny:\n    def m(self):\n        return 1\n\n\n" + big,
+        encoding="utf-8")
+    census = scan_package(tmp_path / "demo3", "pkg")
+    sk = skeleton_cards(census, budget=1500, repo=tmp_path / "demo3")
+    assert "pkg.core.Tiny" not in sk                        # I: 3-LOC class folded
+    assert "pkg.core.big_0" in sk
+
+
 def _git(repo, *args):
     import subprocess
     subprocess.run(["git", "-C", str(repo), *args], check=True,

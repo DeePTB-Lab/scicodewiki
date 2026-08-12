@@ -70,7 +70,8 @@ def glossary_problems(cards: list[dict], narratives_dir: Path) -> list[str]:
     aliases = []
     for c in cards:
         for canon, names in (c.get("terms") or {}).items():
-            for a in names:
+            # E: tolerate str or list[str] values
+            for a in (names if isinstance(names, list) else [names]):
                 aliases.append((a, canon))
     if not aliases or not narratives_dir.is_dir():
         return problems

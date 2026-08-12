@@ -163,6 +163,13 @@ def over_budget(census: dict, manifest: dict, entries=None,
                     hot.append({"stage": stage["id"], "page": sp["id"],
                                 "loc": total})
         else:
+            # H: page-less stages never narrated unless they bind kernels
+            bound = [e for e in entries
+                     if any(e.implements.get("module", "").startswith(sm)
+                            or sm.startswith(e.implements.get("module", ""))
+                            for sm in stage.get("modules", []))]
+            if not any(e.kind == "scientific-kernel" for e in bound):
+                continue
             total = loc_of(stage.get("modules", []))
             if total > budget:
                 hot.append({"stage": stage["id"], "page": None,

@@ -15,6 +15,8 @@ description: Decide the page tree and content allocation (manifest cards:/thesis
    - `excluded_cards:` — plumbing/io/cli cards explicitly excluded WITH a
      note (mechanical home, F7; kernels may NOT be excluded);
    - `thesis:` — the single reader question the page answers;
+     **incremental mode**: declare theses only on pages you will compose
+     this pass (full consistency checks every thesis against a narrative);
    - page priority follows centrality.
 4. Gates: `scicodewiki scan --strict` then `scicodewiki consistency
    --cards-only` (coverage + phantom + exclusions; thesis/glossary/dup/

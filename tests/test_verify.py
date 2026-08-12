@@ -138,6 +138,14 @@ def test_promote_gate_driven(tmp_path):
                  "--entry", "demo.y", "--seed", "1"]) == 1
     assert not (formulas / "demo.y.yaml").exists()   # fail stays staged
 
+    # D: fresh-random default seed must not NameError
+    (staging / "impl.py").write_text(PASS_IMPL, encoding="utf-8")
+    (staging / "demo.z.yaml").write_text(
+        yaml.safe_dump(dict(entry, id="demo.z", formula_impl="impl.py")),
+        encoding="utf-8")
+    assert main(["promote", "--repo", str(tmp_path),
+                 "--entry", "demo.z"]) == 0
+
 
 def test_badge_states_lifecycle(tmp_path):
     repo = tmp_path / "repo"
