@@ -301,6 +301,12 @@ scicodewiki/
 - 生成分工：bootstrap/extract/narrate = agent 步（extract 的判决权在
   机械门）；build/verify/drift = 确定性步。章节质量纪律编码在
   chapter-spec，不编码在案例里。
+- **可复现性契约**：不追求散文逐字确定。结构层（公式卡/导航/链接/
+  覆盖报告）由注册表确定渲染，零 diff；散文层允许 agent 自由，换两条
+  机械约束：定量陈述必带引用（`scicodewiki lint` 强制）、机器词汇零
+  渗出。从头再生的验收 = 门全过 + lint 0 + 结构层确定，而非散文相同。
+- 质量机械检查三件套：`coverage`（沉默缺口）、over-budget（递归触发）、
+  `lint`（写作纪律）。纪律即代码。
 
 ### preview 模式（漏斗宽口，v1）
 

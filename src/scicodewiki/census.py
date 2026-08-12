@@ -58,3 +58,36 @@ def undocumented(census: dict, manifest: dict) -> list[dict]:
         return False
 
     return [u for u in census["units"] if not covered(u["module"])]
+
+
+def over_budget(census: dict, manifest: dict, entries=None,
+                budget: int = 1500) -> list[dict]:
+    """Pages whose bound code exceeds the narration budget: the recursion
+    trigger (chapter-spec). Gives the soft rule teeth.
+
+    Subpages bind registry entries -> their implements.module LOC;
+    page-less stages bind their module list.
+    """
+    entries = entries or []
+    loc_of = lambda mods: sum(  # noqa: E731
+        u["loc"] for u in census["units"]
+        if any(u["module"].startswith(m) or m.startswith(u["module"])
+               for m in mods))
+    entry_mods = {e.id: e.implements.get("module", "") for e in entries}
+    hot = []
+    for stage in manifest["stages"]:
+        pages = stage.get("pages")
+        if pages:
+            for sp in pages:
+                mods = [entry_mods[f] for f in sp.get("formulas", [])
+                        if f in entry_mods]
+                total = loc_of([m for m in mods if m])
+                if total > budget:
+                    hot.append({"stage": stage["id"], "page": sp["id"],
+                                "loc": total})
+        else:
+            total = loc_of(stage.get("modules", []))
+            if total > budget:
+                hot.append({"stage": stage["id"], "page": None,
+                            "loc": total})
+    return hot

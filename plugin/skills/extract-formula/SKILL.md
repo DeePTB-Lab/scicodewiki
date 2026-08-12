@@ -23,6 +23,23 @@ You are the proposer. The mechanical gate decides. Your prose is never authority
   - `mirror(ctx) -> array` — SymPy-lambdified evaluation
   - `target(ctx) -> array` — the REAL code path, random data injected at a documented seam (patch only data-provider methods)
 
+## 3b. Finding seams (make target() run REAL code on random data)
+
+In order of preference:
+1. **constructor injection** — the class takes arrays/providers
+   (freqs, eigvecs, FC3); build it with random ctx.
+2. **object.__new__ + attribute patch** — set only the attributes the
+   method reads; patch *data-provider* methods (e.g. `_phi3_batch`)
+   with ctx lambdas; the math path stays real.
+3. **module-level pure function** — call directly with ctx arrays.
+4. **tolerance/flag seams** — disable post-stages (e.g.
+   `degeneracy_tolerance=0`) to isolate the stage under test.
+
+Rules: patch ONLY data providers, never the compute being mirrored;
+document the seam in the entry (`binds`/`symbol_identity`); if no seam
+exists without refactoring the target, take a coarser stage or
+`kind: novel` + oracle — never re-implement the compute in the mirror.
+
 ## 4. Iterate, then hand to the gate
 - Scratch self-tests are free (your inputs, your iteration loop).
 - Promote staging → `formulas/` only via the gate: `scicodewiki verify --repo <repo> --entry <id>`. The gate draws fresh holdout seeds you never see.

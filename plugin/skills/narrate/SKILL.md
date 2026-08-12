@@ -23,8 +23,9 @@ on every tool test, so hand-memory content is a defect.
    cross-literature convention differences as ONE prose paragraph.
 5. Run `scicodewiki build --repo <repo>` then `scicodewiki verify
    --repo <repo>`; fix structural errors.
-6. Self-check the spec's 写作纪律 list. Machine-flavored wording or an
-   uncited number = defect; rewrite.
+6. Run `scicodewiki lint --repo <repo>`; every reported problem is a
+   rewrite (the lint IS the 写作纪律 checklist, as code). Also check
+   `coverage` output for over-budget pages: split them bottom-up.
 
 ## Never
 

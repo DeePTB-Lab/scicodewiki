@@ -39,6 +39,16 @@ def _cmd_verify(args) -> int:
     return 1 if failed else 0
 
 
+def _cmd_lint(args) -> int:
+    from .lint import lint_narratives
+
+    problems = lint_narratives(Path(args.repo).resolve() / "wiki" / "narratives")
+    for prob in problems:
+        print(prob)
+    print(f"lint: {len(problems)} problems (0 = chapter-spec discipline holds)")
+    return 1 if problems else 0
+
+
 def _cmd_census(args) -> int:
     from .census import write_census
 
@@ -56,13 +66,23 @@ def _cmd_coverage(args) -> int:
     from .census import scan_package, undocumented
     from .manifest import load_manifest
 
+    from .census import over_budget
+    from .registry import load_entries
+
     repo = Path(args.repo).resolve()
     package = args.package or repo.name
-    manifest = load_manifest(repo / "wiki" / "formulas" / "manifest.yaml")
-    gaps = undocumented(scan_package(repo, package), manifest)
+    formulas = repo / "wiki" / "formulas"
+    manifest = load_manifest(formulas / "manifest.yaml")
+    census = scan_package(repo, package)
+    gaps = undocumented(census, manifest)
     for u in gaps:
         print(f"undocumented: {u['module']} ({u['loc']} LOC, "
               f"{len(u['functions'])} funcs)")
+    entries = load_entries(formulas) if (formulas).is_dir() else []
+    for h in over_budget(census, manifest, entries):
+        where = f"{h['stage']}/{h['page']}" if h["page"] else h["stage"]
+        print(f"over-budget: {where} binds {h['loc']} LOC (>1500: "
+              f"split + bottom-up synthesis per chapter-spec)")
     print(f"coverage: {len(gaps)} undocumented modules "
           f"(0 = every census unit is documented)")
     return 0
@@ -196,6 +216,10 @@ def main(argv=None) -> int:
     p = sub.add_parser("drift", help="report badge states (verified/stale/failing/unverified)")
     _repo_args(p)
     p.set_defaults(fn=_cmd_drift)
+
+    p = sub.add_parser("lint", help="mechanical discipline checks on narratives (chapter-spec as code)")
+    _repo_args(p)
+    p.set_defaults(fn=_cmd_lint)
 
     p = sub.add_parser("census", help="deterministic AST inventory of the package (decomposition ground truth)")
     _repo_args(p)
