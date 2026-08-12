@@ -31,6 +31,10 @@ You are the proposer. The mechanical gate decides. Your prose is never authority
   `Abs` over `positive=True` when the target applies abs() to signed
   inputs; likewise min/max traps. A wrong assumption reads as a
   non-constant ratio at the gate.
+- Match the code's FIELD: if the code runs complex eigenvectors (phonax
+  does), sample complex arrays and mirror |V|² as V·conj(V); the gate's
+  allclose handles complex natively. Real-only mirrors are a documented
+  v0 simplification, not the ceiling.
 
 ## 3b. Finding seams (make target() run REAL code on random data)
 

@@ -69,6 +69,27 @@ def _cmd_preview(args) -> int:
     return 0
 
 
+def _cmd_export_skills(args) -> int:
+    """Open-standard skill pack for non-Claude coding agents (codex reads
+    .agents/skills; the SKILL.md frontmatter format is the shared standard)."""
+    import shutil
+
+    root = Path(__file__).resolve().parents[2]
+    src_skills = root / "plugin" / "skills"
+    out = Path(args.out)
+    for skill_dir in sorted(src_skills.iterdir()):
+        if skill_dir.is_dir():
+            shutil.copytree(skill_dir, out / skill_dir.name,
+                            dirs_exist_ok=True)
+    spec = out / "_templates"
+    spec.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(root / "templates" / "chapter-spec.md",
+                 spec / "chapter-spec.md")
+    print(f"exported {len(list(src_skills.iterdir()))} skills + "
+          f"chapter-spec -> {out}")
+    return 0
+
+
 def _cmd_signatures(args) -> int:
     import ast as _ast
 
@@ -380,6 +401,10 @@ def main(argv=None) -> int:
     p.add_argument("--strict", action="store_true",
                    help="exit 1 while skeleton cards remain (outline gate)")
     p.set_defaults(fn=_cmd_scan)
+
+    p = sub.add_parser("export-skills", help="copy the skill pack + chapter-spec for non-Claude agents (codex: .agents/skills)")
+    p.add_argument("--out", required=True, help="target dir, e.g. <repo>/.agents/skills")
+    p.set_defaults(fn=_cmd_export_skills)
 
     p = sub.add_parser("signatures", help="dump docstring-first-line + signatures per unit (plumbing-tier tooling, J)")
     _repo_args(p)

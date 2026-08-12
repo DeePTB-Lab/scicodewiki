@@ -110,6 +110,28 @@ def _git(repo, *args):
                                              "GIT_COMMITTER_EMAIL": "t@t"})
 
 
+COMPLEX_IMPL = textwrap.dedent("""
+    import numpy as np
+
+    def sample(rng):
+        a = rng.normal(3) + 1j * rng.normal(3)
+        return {"e": a}
+
+    def mirror(ctx):
+        return np.abs(ctx["e"]) ** 2          # V*conj(V), complex-native
+
+    def target(ctx):
+        return (ctx["e"] * np.conj(ctx["e"])).real
+""")
+
+
+def test_gate_handles_complex_fields(tmp_path):
+    formulas = _write_formulas(tmp_path, COMPLEX_IMPL)
+    entry = load_entries(formulas)[0]
+    v = run_gate(entry, formulas, seed=3)
+    assert v.result == "pass"
+
+
 def test_promote_gate_driven(tmp_path):
     from scicodewiki.cli import main
 

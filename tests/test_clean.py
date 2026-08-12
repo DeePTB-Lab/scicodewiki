@@ -1,6 +1,16 @@
 from scicodewiki.cli import main
 
 
+def test_export_skills(tmp_path):
+    out = tmp_path / "skills"
+    assert main(["export-skills", "--out", str(out)]) == 0
+    names = {p.name for p in out.iterdir()}
+    assert {"compose", "scan-repo", "outline", "edit-prose",
+            "extract-formula", "bootstrap", "build-wiki", "fix-drift"} <= names
+    assert (out / "compose" / "SKILL.md").exists()
+    assert (out / "_templates" / "chapter-spec.md").exists()
+
+
 def test_clean_wipes_entire_wiki_keeps_repo_content(tmp_path):
     wiki = tmp_path / "wiki"
     for d in ("formulas", "pages", "_site", "narratives"):
