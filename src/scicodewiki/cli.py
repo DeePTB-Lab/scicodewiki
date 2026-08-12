@@ -178,6 +178,28 @@ def _cmd_promote(args) -> int:
     return 0
 
 
+def _cmd_audit(args) -> int:
+    import json
+    import os
+
+    from .audit import audit, write_report
+
+    repo = Path(args.repo).resolve()
+    os.environ["SCICODEWIKI_REPO"] = str(repo)
+    summary = audit(Path(args.claims), seed=args.seed)
+    out = Path(args.out) if args.out else Path(args.claims) / "audit-report.md"
+    write_report(out, summary, args.generator)
+    (out.with_suffix(".json")).write_text(
+        json.dumps(summary, indent=1, ensure_ascii=False), encoding="utf-8")
+    t = summary["totals"]
+    print(f"audit[{args.generator}]: {t['claims']} claims, {t['fail']} fail, "
+          f"{t['pass']} pass, {t['unverifiable']} unverifiable")
+    for v in summary["verdicts"]:
+        if v["result"] == "fail":
+            print(f"  FAIL {v['id']}: {v['diagnosis']}")
+    return 0
+
+
 def _cmd_consistency(args) -> int:
     from .consistency import check_repo
 
@@ -401,6 +423,15 @@ def main(argv=None) -> int:
     p.add_argument("--strict", action="store_true",
                    help="exit 1 while skeleton cards remain (outline gate)")
     p.set_defaults(fn=_cmd_scan)
+
+    p = sub.add_parser("audit", help="mechanically judge formula claims extracted from any wiki (C2 metric)")
+    _repo_args(p)
+    p.add_argument("--claims", required=True, help="claims dir (yaml + mirrors)")
+    p.add_argument("--generator", default="unknown",
+                   help="name of the wiki generator under audit")
+    p.add_argument("--out", default=None)
+    p.add_argument("--seed", type=int, default=0)
+    p.set_defaults(fn=_cmd_audit)
 
     p = sub.add_parser("mcp", help="serve the registry as an MCP knowledge source (stdio)")
     p.set_defaults(fn=lambda a: __import__(
