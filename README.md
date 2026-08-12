@@ -32,6 +32,11 @@ compose → edit → build) from `codex exec` with the skills in
 there; run `scicodewiki drift` / `drift-cards` manually — the AGENTS.md
 conventions instruct the agent to do so after touching bound code.
 
+Operational note: in non-interactive runs, close stdin
+(`codex exec ... < /dev/null`) — with an open pipe, `codex exec` blocks
+forever reading "additional input". Verified: the full scan-repo flow runs
+green under codex-cli 0.146.
+
 ## Status
 
 v0.5: mechanical chain + skills cold-validated on two repos (phonax,
