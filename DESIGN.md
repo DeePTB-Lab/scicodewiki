@@ -308,12 +308,13 @@ scicodewiki/
 - 质量机械检查三件套：`coverage`（沉默缺口）、over-budget（递归触发）、
   `lint`（写作纪律）。纪律即代码。
 
-### preview 模式（漏斗宽口，v1）
+### preview 模式（漏斗宽口，已建 v0）
 
-最低要求入口：不建注册表/不写公式/不配 CI/不改仓库；一条命令生成代码层 wiki
-（叙事 + 结构 grounding 的图），**零公式断言**，叙事显式标 ⚪ 未验证。
-比 deepwiki-open 更轻：不起服务、不建向量索引、不要 embedding key。
-价值 = 升级路径：preview 推断的树 = `init` 的 manifest 草稿；逐条 ⚪→✅。
+`scicodewiki preview`：零 LLM、零配置——census 机械合成 preview manifest
+（顶层子包 = stage），复用渲染管线生成代码层 wiki，带预览横幅，
+**零公式断言**。注册表已存在时拒跑（指向完整链路），--force 例外。
+比 deepwiki-open 更轻：不起服务、不建向量索引、不要 embedding key，且确定。
+价值 = 升级路径：preview 的机械树 = bootstrap 的起点；逐条 ⚪→✅。
 这是对 deepwiki-open 17.6k stars 提出的采用摩擦问题的回答。
 
 ## 9. Agent 任务契约

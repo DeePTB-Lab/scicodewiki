@@ -283,8 +283,12 @@ def index_md(manifest: dict, entries: list[FormulaEntry], repo: Path,
     """Landing page: what the code does, pipeline at a glance, reading map.
     Pure documentation — no verification plumbing on reader surfaces."""
     stages = manifest["stages"]
-    lines = [f"# {manifest['repo']}", "",
-             "科学计算文档：按物理工作流组织，公式与代码绑定一一对应，",
+    lines = [f"# {manifest['repo']}", ""]
+    if manifest.get("preview"):
+        lines += ["> **预览**：代码层导航，未含公式层与叙事。",
+                  "> 完整验证文档：bootstrap → extract → narrate → build。",
+                  ""]
+    lines += ["科学计算文档：按物理工作流组织，公式与代码绑定一一对应，",
              "理论取文献规范形式，约定差异显式换算。", "",
              "```mermaid", "flowchart LR"]
     lines.append("  " + " --> ".join(

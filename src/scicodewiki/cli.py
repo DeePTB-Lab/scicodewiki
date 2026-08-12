@@ -39,6 +39,34 @@ def _cmd_verify(args) -> int:
     return 1 if failed else 0
 
 
+def _cmd_preview(args) -> int:
+    import tempfile
+
+    import yaml as _yaml
+
+    from .census import preview_manifest, scan_package
+    from .render import build
+
+    repo = Path(args.repo).resolve()
+    if (repo / "wiki" / "formulas").exists() and not args.force:
+        print("scicodewiki: registry exists at wiki/formulas — use `build` "
+              "for the full wiki; preview is the zero-setup funnel entry "
+              "(--force to overwrite)", file=sys.stderr)
+        return 2
+    census = scan_package(repo, args.package or repo.name)
+    manifest = preview_manifest(census, repo.name)
+    with tempfile.TemporaryDirectory() as td:
+        fdir = Path(td)
+        (fdir / "manifest.yaml").write_text(
+            _yaml.safe_dump(manifest, allow_unicode=True, sort_keys=False),
+            encoding="utf-8")
+        build(repo, fdir, repo / "wiki")
+    print(f"preview wiki at {repo / 'wiki'}: code-layer navigation only, "
+          f"no formula layer; bootstrap+extract+narrate+build for the "
+          f"verified wiki")
+    return 0
+
+
 def _cmd_lint(args) -> int:
     from .lint import lint_narratives
 
@@ -216,6 +244,13 @@ def main(argv=None) -> int:
     p = sub.add_parser("drift", help="report badge states (verified/stale/failing/unverified)")
     _repo_args(p)
     p.set_defaults(fn=_cmd_drift)
+
+    p = sub.add_parser("preview", help="zero-setup code-layer wiki from census (funnel entry, no LLM)")
+    _repo_args(p)
+    p.add_argument("--package", default=None)
+    p.add_argument("--force", action="store_true",
+                   help="overwrite an existing registry-backed wiki")
+    p.set_defaults(fn=_cmd_preview)
 
     p = sub.add_parser("lint", help="mechanical discipline checks on narratives (chapter-spec as code)")
     _repo_args(p)

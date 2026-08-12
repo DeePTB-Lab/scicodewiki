@@ -60,6 +60,27 @@ def undocumented(census: dict, manifest: dict) -> list[dict]:
     return [u for u in census["units"] if not covered(u["module"])]
 
 
+def preview_manifest(census: dict, repo_name: str) -> dict:
+    """Deterministic zero-LLM manifest for preview mode: one stage per
+    top-level subpackage. Funnel entry; extract/narrate refine later."""
+    stages = {}
+    for u in census["units"]:
+        parts = u["module"].split(".")
+        top = parts[1] if len(parts) > 2 else None
+        if not top or top in ("tests",):
+            continue
+        stages.setdefault(top, set()).add(
+            ".".join(parts[:3]) if len(parts) > 3 else u["module"])
+    return {
+        "repo": repo_name,
+        "preview": True,
+        "stages": [
+            {"id": t, "title": t, "modules": sorted(ms)}
+            for t, ms in sorted(stages.items())
+        ],
+    }
+
+
 def over_budget(census: dict, manifest: dict, entries=None,
                 budget: int = 1500) -> list[dict]:
     """Pages whose bound code exceeds the narration budget: the recursion
