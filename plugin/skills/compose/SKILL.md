@@ -15,6 +15,12 @@ description: Write wiki narratives (subsystem subpages + zone-1 theory page) fro
 - `wiki/narratives/<stage>-<page>.md`; the opening blocks must address the
   page's `thesis:` (manifest).
 - Mermaid diagrams from card + re-read data flow only.
+- **Code-layer density is mandatory** (chapter-spec §代码层密度): run
+  `scicodewiki signatures` for the stage's modules and build a code-map
+  table (function/class + one-line role); every bound module gets a body
+  section (inputs/outputs/complexity/boundaries for the key ones); usage
+  pages carry runnable CLI+Python examples. Thin prose = gate failure;
+  expand or split, never ship a summary-of-summaries.
 
 ## 3. Writing craft (craft layer)
 - reader-question-driven: each `##` answers the question the reader has at

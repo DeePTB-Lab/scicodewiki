@@ -40,8 +40,21 @@ docs/ 推导**，不得凭模型记忆；每条定量陈述带出处。
 - 记号表：符号 / 含义 / 单位口径（由 symbol_identity 重排成文档形态）；
 - 与其他约定的差异：一段散文（差 2、2π、ħ 的来源），不写对照表。
 
+## 代码层密度（硬要求，`consistency` 机械检查）
+
+- **每页正文下限**：physics ≥1500 字、algorithm ≥2500 字、usage/benchmarks ≥2000 字（去代码块计）；
+- **模块必须入正文**：stage.modules 里每个模块在正文被描述（小节或 code-map 表行），
+  只出现在链接清单 = 门失败；
+- **algorithm 页必有 code-map 表**：函数/类清单（名 + 一句职责），用
+  `scicodewiki signatures --repo <repo> --package <pkg>` 的 dump 作原料；
+  关键模块另给算法解释段（输入/输出/复杂度/边界）；
+- **usage 页必有可运行示例**（CLI + Python 各一）；
+- 信息密度与公式层同权：薄页 = 门失败，agent 必须扩写或拆页。
+
 ## 规模与递归（预算规则）
 
+- **粒度规则**：单页绑定 >3 个模块或 >2500 LOC 时，outline 必须拆子页
+  （一页要总结 >3 个模块必然变薄，密度门会拒绝）；
 - 绑定代码以 `scicodewiki census` 为 ground truth；子页绑定超过约
   **1500 LOC** 时必须拆分：先按组件/大函数各自成节（叶子叙事），
   再 bottom-up 综合出节间导语；递归深度 ≤ 2，更深用页内锚点。

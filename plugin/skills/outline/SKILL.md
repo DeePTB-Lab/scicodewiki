@@ -17,7 +17,10 @@ description: Decide the page tree and content allocation (manifest cards:/thesis
    - `thesis:` — the single reader question the page answers;
      **incremental mode**: declare theses only on pages you will compose
      this pass (full consistency checks every thesis against a narrative);
-   - page priority follows centrality.
+   - page priority follows centrality;
+   - **granularity**: split any page binding >3 modules or >2500 LOC into
+     subpages (a page that must summarize >3 modules will be thin — the
+     density gate will reject it).
 4. Gates: `scicodewiki scan --strict` then `scicodewiki consistency
    --cards-only` (coverage + phantom + exclusions; thesis/glossary/dup/
    links need narratives, so full `consistency` runs after compose).

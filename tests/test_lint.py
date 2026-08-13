@@ -67,3 +67,24 @@ def test_over_budget_flags_hot_subpage():
                                       "formulas": ["demo.x"]}]}]}
     hot = over_budget(census, manifest, [FormulaEntry.from_dict(ENTRY)])
     assert hot == [{"stage": "s", "page": "algorithm", "loc": 3800}]
+
+
+def test_density_gate(tmp_path):
+    from scicodewiki.lint import density_problems
+
+    nd = tmp_path / "narratives"
+    nd.mkdir()
+    manifest = {"stages": [{"id": "s", "title": "t",
+                           "modules": ["pkg.alpha", "pkg.beta"],
+                           "pages": [{"id": "algorithm", "title": "a"}]}]}
+    (nd / "s-algorithm.md").write_text("# t\n\n## x\n\nshort.\n",
+                                       encoding="utf-8")
+    probs = density_problems(nd, manifest)
+    assert any("thin page" in p for p in probs)
+    assert any("pkg.alpha" in p for p in probs)
+    assert any("code-map" in p for p in probs)
+
+    dense = ("## code map\n\n| f | role |\n|---|---|\n| x | y |\n\n"
+             + "alpha " * 800 + "beta " * 800)
+    (nd / "s-algorithm.md").write_text("# t\n\n" + dense, encoding="utf-8")
+    assert density_problems(nd, manifest) == []

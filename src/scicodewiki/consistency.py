@@ -170,7 +170,10 @@ def check_repo(repo: Path, cards_only: bool = False) -> list[str]:
         if not cards_only:          # F5: thesis needs narratives (compose)
             problems += thesis_problems(manifest, narratives)
     if not cards_only:
+        from .lint import density_problems
+
         problems += glossary_problems(cards, narratives)
         problems += duplication_problems(narratives)
         problems += link_problems(narratives, repo)
+        problems += density_problems(narratives, manifest)
     return problems
