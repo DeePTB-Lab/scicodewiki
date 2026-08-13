@@ -101,7 +101,10 @@ def test_links(tmp_path):
 
 
 def test_cli_consistency_exit_codes(tmp_path):
-    repo, _ = _wiki(tmp_path, cards=("a",), alloc=("a",))
+    dense = "## body\n\nm 模块负责核心计算。" + "信息 " * 800
+    repo, _ = _wiki(tmp_path, cards=("a",), alloc=("a",),
+                    narratives={"s.md": dense,
+                                "theory.md": "原理介绍 " * 600})
     assert main(["consistency", "--repo", str(repo)]) == 0
     # unallocated kernel -> exit 1
     _write_card(repo / "wiki" / "scan", "m.b")

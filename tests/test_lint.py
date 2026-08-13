@@ -88,3 +88,29 @@ def test_density_gate(tmp_path):
              + "alpha " * 800 + "beta " * 800)
     (nd / "s-algorithm.md").write_text("# t\n\n" + dense, encoding="utf-8")
     assert density_problems(nd, manifest) == []
+
+
+def test_theory_coverage_gate(tmp_path):
+    from scicodewiki.lint import theory_coverage_problems
+
+    nd = tmp_path / "narratives"
+    nd.mkdir()
+    manifest = {"stages": [
+        {"id": "harmonic-state", "title": "t", "modules": ["pkg.phonons"],
+         "pages": []},
+        {"id": "anharmonic-scattering", "title": "t", "modules": ["pkg.linewidth"],
+         "pages": []}]}
+    cards = [{"kind": "scientific-kernel", "unit": "pkg.phonons.dos"},
+             {"kind": "scientific-kernel", "unit": "pkg.linewidth.width"}]
+    assert theory_coverage_problems(nd, manifest, cards)[0].startswith(
+        "theory.md missing")
+
+    (nd / "theory.md").write_text("# t\n\nshort\n", encoding="utf-8")
+    probs = theory_coverage_problems(nd, manifest, cards)
+    assert any("harmonic" in p for p in probs)      # capability not introduced
+    assert any("< 2000" in p for p in probs)        # thin theory
+
+    (nd / "theory.md").write_text(
+        "# t\n\n" + "harmonic anharmonic scattering dos 谱 " * 300,
+        encoding="utf-8")
+    assert theory_coverage_problems(nd, manifest, cards) == []

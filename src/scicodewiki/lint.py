@@ -92,3 +92,40 @@ def density_problems(narratives_dir: Path, manifest: dict) -> list[str]:
                 problems.append(f"{fname}: algorithm page lacks a code-map "
                                 f"table (function/class inventory)")
     return problems
+
+
+THEORY_MIN = 2000
+
+
+def theory_coverage_problems(narratives_dir: Path, manifest: dict,
+                             cards: list) -> list[str]:
+    """Zone-1 theory page must introduce EVERY physics capability the code
+    implements (spectrum/DOS, linewidth, transport, ...), not just the
+    flagship. Coverage is mechanical: each scientific-kernel stage must be
+    mentioned in theory.md or carry its own dense physics page."""
+    probs = []
+    tpath = Path(narratives_dir) / "theory.md"
+    if not tpath.exists():
+        return ["theory.md missing: zone-1 theory page is required"]
+    text = tpath.read_text(encoding="utf-8")
+    prose = _prose_chars(text)
+    if prose < THEORY_MIN:
+        probs.append(f"theory.md: prose {prose} chars < {THEORY_MIN} "
+                     f"(must introduce every capability, not just the flagship)")
+    for s in manifest["stages"]:
+        mods = s.get("modules", [])
+        has_kernel = any(
+            c.get("kind") == "scientific-kernel"
+            and any(c.get("unit", "").startswith(m)
+                    or m.startswith(c.get("unit", "")) for m in mods)
+            for c in cards)
+        if not has_kernel:
+            continue
+        tokens = [t for t in s["id"].replace("-", "_").split("_")
+                  if len(t) > 3]
+        phys_page = any(sp.get("id") == "physics" for sp in s.get("pages", []))
+        if tokens and not any(t in text for t in tokens) and not phys_page:
+            probs.append(f"theory.md: capability '{s['id']}' never "
+                         f"introduced (no physics page either) — every "
+                         f"capability needs a principle intro")
+    return probs
