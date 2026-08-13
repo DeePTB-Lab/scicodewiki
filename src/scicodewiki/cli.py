@@ -301,8 +301,18 @@ def _cmd_clean(args) -> int:
 
 
 def _cmd_serve(args) -> int:
+    import importlib.util
     import subprocess
 
+    missing = [m for m in ("mkdocs", "pymdownx", "material")
+               if importlib.util.find_spec(m) is None]
+    if missing:
+        print(f"scicodewiki serve: missing render deps {missing}.\n"
+              "  install with: pip install 'scicodewiki[render]'\n"
+              "  (note: the pymdownx module ships in the PyPI package "
+              "'pymdown-extensions'; 'mkdocs-material' pulls it in)",
+              file=sys.stderr)
+        return 2
     repo = Path(args.repo).resolve()
     cfg = repo / "wiki" / "mkdocs.yml"
     if not cfg.exists():

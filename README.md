@@ -37,6 +37,18 @@ Operational note: in non-interactive runs, close stdin
 forever reading "additional input". Verified: the full scan-repo flow runs
 green under codex-cli 0.146.
 
+## Quickstart
+
+```bash
+pip install -e '<path-to-scicodewiki>[render]'   # [render] = mkdocs + mkdocs-material (+pymdown-extensions)
+cd <target-repo>
+scicodewiki export-skills --out .agents/skills
+# then drive the chain via your coding agent (skills in .agents/skills)
+scicodewiki build --repo . && scicodewiki serve --repo .
+```
+
+(`serve` checks its render deps and tells you the exact install command if missing.)
+
 ## Status
 
 v0.5: mechanical chain + skills cold-validated on two repos (phonax,
